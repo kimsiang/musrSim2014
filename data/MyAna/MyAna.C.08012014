@@ -1,0 +1,439 @@
+#include "MyAna.h"
+#include <iostream>
+#include <cmath>
+#include <omp.h>
+#include <TROOT.h>
+#include <TRandom.h>
+#include <TCanvas.h>
+
+#include "TSystem.h"
+void
+MyAna::Loop (string filename)
+{
+//  cout << "Loop()" << endl;
+
+// initialize ();
+  initialize (filename);
+
+  if (fChain == 0)
+    return;
+
+  Long64_t nentries = fChain->GetEntriesFast ();
+// nentries = 1000;
+  Int_t nbytes = 0, nb = 0;
+  for (Long64_t jentry = 0; jentry < nentries; jentry++)
+    {
+      Long64_t ientry = LoadTree (jentry);
+      if (ientry < 0)
+	break;
+      nb = fChain->GetEntry (jentry);
+      nbytes += nb;
+
+      clear ();
+      execute ();
+
+
+    }
+
+  finalize (filename);
+
+}
+
+void
+MyAna::initialize (filename)
+{
+
+// cout << "initialize()" << endl;
+ filename.append (".root");
+   char *out = (char *) filename.c_str ();
+     m_file = new TFile (out, "recreate");
+      	upstream = 0;
+  downstream = 0;
+  target = 0;
+  nLU = 0;
+  nBU = 0;
+  nRU = 0;
+  nTU = 0;
+  nLD = 0;
+  nBD = 0;
+  nRD = 0;
+  nTD = 0;
+  nevent = 0;
+
+  int nbin = 650;
+
+  f = new TH1F ("forward", "f", nbin, -1, 12);
+  b = new TH1F ("backward", "b", nbin, -1, 12);
+  f1 = new TH1F ("forward1", "f1", nbin, -1, 12);
+  f2 = new TH1F ("forward2", "f2", nbin, -1, 12);
+  f3 = new TH1F ("forward3", "f3", nbin, -1, 12);
+  f4 = new TH1F ("forward4", "f4", nbin, -1, 12);
+  b1 = new TH1F ("backward1", "b1", nbin, -1, 12);
+  b2 = new TH1F ("backward2", "b2", nbin, -1, 12);
+  b3 = new TH1F ("backward3", "b3", nbin, -1, 12);
+  b4 = new TH1F ("backward4", "b4", nbin, -1, 12);
+  tof = new TH1F ("tof", "tof", nbin, 0, 325);
+  ke = new TH1F ("kinetic", "ke", nbin, 0, 40);
+  polx = new TH1F ("polx", "polx", 200, -1, 1);
+  poly = new TH1F ("poly", "poly", 200, -1, 1);
+  polz = new TH1F ("polz", "polz", 200, -1, 1);
+  etrig = new TH1F ("etrig", "etrig", 1000, 0, 20);
+  edep_b1 = new TH1F ("edep_b1", "edep_b1", 1000, 0, 5);
+  edep_f1 = new TH1F ("edep_f1", "edep_f1", 1000, 0, 5);
+  edep_b2 = new TH1F ("edep_b2", "edep_b2", 1000, 0, 5);
+  edep_f2 = new TH1F ("edep_f2", "edep_f2", 1000, 0, 5);
+  ke_trig = new TH1F ("ke_trig", "ke_trig", nbin, 0, 20);
+  ke_stop = new TH1F ("ke_stop", "ke_stop", nbin, 0, 20);
+  Afb = new TH1F ("Afb", "Afb", nbin, -1, 12);
+  decayZ_b = new TH1F ("decayZ_b", "decayZ_b", 200, -180, 20);
+  decayZ_f = new TH1F ("decayZ_f", "decayZ_f", 200, -180, 20);
+  decayXY = new TH2F ("decayXY", "decayXY", 100, -50, 50, 100, -50, 50);
+  decayZf = new TH2F ("decayZf", "decayZf", nbin, -1, 12, 200, -180, 20);
+  decayZb = new TH2F ("decayZb", "decayZb", nbin, -1, 12, 200, -180, 20);
+  myfit = new TF1 ("myfit", "[0]", 1, 5);
+  exp1 = new TF1 ("exp1", "[0]*exp(-x/2.2)+[1]", 1, 5);
+  exp2 = new TF1 ("exp2", "[0]*exp(-x/2.2)+[1]", 1, 5);
+
+}
+
+void
+MyAna::execute ()
+{
+//  cout << "execute()" << endl;
+//  cout << "################################" << endl;
+  //cout << "  eventID: " << eventID << endl;
+
+
+  bool trig = false;
+  bool stop = false;
+  bool inside = false;
+  int ncount = 0;
+  int id[8] = { };
+  double tstart = 0;
+//  double tend = 0;
+  double eCut = 0.5;
+
+
+  //Set up the random number generator for smearing our data
+  TRandom *rand = new TRandom ();
+  rand->SetSeed (0);		//Set a random seed
+
+  //  for(int i=0; i<save_n; i++){
+//  if(save_detID[i]==901&&save_particleID[i]==-13&&save_ke[i]>0.003) 
+//  break;  
+  //  }
+  double total_edep = 0;
+
+  for (int i = 0; i < det_n; i++)
+    {
+
+      if (det_ID[i] == 65)
+	{
+	  total_edep += det_edep[i] * 1000;
+	  inside = true;
+	  tstart = det_time_start[i];
+	}
+    }
+  if (inside && total_edep > 0.0)
+    {
+      trig = true;
+    }
+
+  if (inside)
+    {
+      etrig->Fill (total_edep);
+    }
+
+
+  for (Int_t i = 0; i < det_n; i++)
+    {
+      if (det_ID[i] >= 1 && det_ID[i] <= 16)
+	{
+	  edep_b1->Fill (det_edep[i]);
+	}
+      else if (det_ID[i] >= 33 && det_ID[i] <= 48)
+	{
+	  edep_b2->Fill (det_edep[i]);
+	}
+      else if (det_ID[i] >= 17 && det_ID[i] <= 32)
+	{
+	  edep_f1->Fill (det_edep[i]);
+	}
+      else if (det_ID[i] >= 49 && det_ID[i] <= 64)
+	{
+	  edep_f2->Fill (det_edep[i]);
+	}
+    }
+
+  if (trig)
+    {
+
+      // Hist in Back detector (1-16) coincidence (33-48)
+      for (Int_t i = 0; i < det_n; i++)
+	{
+	  if (det_ID[i] >= 1 && det_ID[i] <= 16 && !stop)
+	    {
+	      if (det_edep[i] > eCut)
+		{
+		  for (Int_t j = 0; j < det_n; j++)
+		    {
+		      if (det_ID[j] >= 33 && det_ID[j] <= 48)
+			{
+			  if ((det_ID[j] - det_ID[i] == 32)
+			      && det_edep[j] > eCut)
+			    {
+			      b->Fill (det_time_start[i]-tstart);
+			      if(det_ID[j] >= 33 && det_ID[j] <= 36){b1->Fill (det_time_start[i]-tstart);}
+			      if(det_ID[j] >= 37 && det_ID[j] <= 40){b2->Fill (det_time_start[i]-tstart);}
+			      if(det_ID[j] >= 41 && det_ID[j] <= 44){b3->Fill (det_time_start[i]-tstart);}
+			      if(det_ID[j] >= 45 && det_ID[j] <= 48){b4->Fill (det_time_start[i]-tstart);}
+			      decayZ_b->Fill (muDecayPosZ);
+			      decayZb->Fill (det_time_start[i]-tstart, muDecayPosZ);
+			      ++upstream;
+			      decayXY->Fill (muDecayPosX, muDecayPosY);
+			      if (abs (muDecayPosX) <= 10
+				  && abs (muDecayPosY) <= 10
+				  && muDecayPosZ > 0.99)
+				{
+				  ++target;
+				}
+			      stop = true;
+			      polx->Fill (muDecayPolX);
+			      poly->Fill (muDecayPolY);
+			      polz->Fill (muDecayPolZ);
+			      //cout<<"# Backward detector!"<<endl;
+			      break;	//fill only once
+			    }
+			}
+		    }
+		}
+	    }
+	}
+
+      // Hist in Forw I detector (17-32) coincidence (49-64)
+      for (Int_t i = 0; i < det_n; i++)
+	{
+	  if (det_ID[i] >= 17 && det_ID[i] <= 32 && !stop)
+	    {
+	      if (det_edep[i] > eCut)
+		{
+		  for (Int_t j = 0; j < det_n; j++)
+		    {
+		      if (det_ID[j] <= 64 && det_ID[j] >= 49)
+			{
+			  if ((det_ID[j] - det_ID[i] == 32)
+			      && det_edep[j] > eCut)
+			    {
+			      f->Fill (det_time_start[i]-tstart);
+			      if(det_ID[j] >= 49 && det_ID[j] <= 52){f1->Fill (det_time_start[i]-tstart);}
+			      if(det_ID[j] >= 53 && det_ID[j] <= 56){f2->Fill (det_time_start[i]-tstart);}
+			      if(det_ID[j] >= 57 && det_ID[j] <= 60){f3->Fill (det_time_start[i]-tstart);}
+			      if(det_ID[j] >= 61 && det_ID[j] <= 64){f4->Fill (det_time_start[i]-tstart);}
+			      decayZ_f->Fill (muDecayPosZ);
+			      decayZf->Fill (det_time_start[i]-tstart, muDecayPosZ);
+			      ++downstream;
+			      decayXY->Fill (muDecayPosX, muDecayPosY);
+			      if (abs (muDecayPosX) <= 10
+				  && abs (muDecayPosY) <= 10
+				  && muDecayPosZ > 0.99)
+				{
+				  ++target;
+				}
+			      stop = true;
+			      polx->Fill (muDecayPolX);
+			      poly->Fill (muDecayPolY);
+			      polz->Fill (muDecayPolZ);
+			      //cout<<"# Forward detector!"<<endl;
+			      break;	//fill only once
+			    }
+			}
+		    }
+		}
+	    }
+	}
+
+    }
+
+  for (int i = 0; i < save_n; i++)
+    {
+      if (save_detID[i] == 901
+	  && (save_particleID[i] == -13 || save_particleID[i] == -1313))
+	{
+	  //  cout<<"ke:"<< save_ke[i] <<endl;
+	  ke->Fill (save_ke[i] * 1000);
+	  if (trig)
+	    {
+	      ke_trig->Fill (save_ke[i] * 1000);
+	      tof->Fill ((save_time[i] - tstart)*1000);
+	      if (stop)
+		{
+		  //              cout<<"# Stopped!"<<endl;
+		  ke_stop->Fill (save_ke[i] * 1000);
+		  break;	//fill only once
+		}
+	    }
+	}
+    }
+
+// cout<<"upstream: "<<upstream<<", downstream: "<<downstream<<endl;
+  ++nevent;
+
+  delete rand;
+
+}
+
+void
+MyAna::finalize (string filename)
+{
+  TCanvas *c1 = new TCanvas ("c1", "c1", 1400, 1000);
+/*  cout << "finalize()" << endl;
+  cout << "total: " << upstream+downstream << ", upstream: " << upstream << ", downstream: " << downstream << endl;
+  cout << "asymmetry: " << (double) (upstream - downstream) / (upstream + downstream) 
+       << ", target: " << target << "(" << (double) target / (upstream +  downstream) << ")" << endl;
+*/
+  cout << "Total events: " << nevent << endl;
+  cout << "Downstream: " << downstream << endl;
+  cout << "Upstream: " << upstream << endl;
+
+  double fw = 0;
+  double bw = 0;
+
+//#pragma omp parallel for
+  for (int i = 1; i < 1201; i++)
+    {
+      fw = f->GetBinContent (i);
+      bw = b->GetBinContent (i);
+      if (fw != 0 && bw != 0)
+	{
+	  Afb->SetBinContent (i, (bw - fw) / (bw + fw));
+	}
+      if (fw == 0 || bw == 0)
+	{
+	  Afb->SetBinContent (i, 0);
+	}
+    }
+
+  c1->Divide (4, 3);
+  c1->cd (1);
+  b->Draw ();
+  exp1->SetParameters (100, 20);
+  b->Fit ("exp1", "NQR");
+
+  c1->cd (2);
+  f->Draw ();
+  exp2->SetParameters (100, 20);
+  f->Fit ("exp2", "NQR");
+
+  c1->cd (3);
+  Afb->Draw ();
+  myfit->SetParameter (0, 0.3);
+  Afb->Fit ("myfit", "QR");
+  cout << "Afb: " << myfit->GetParameter (0) << "(fit), " <<
+    (double) (upstream - downstream) / (upstream +
+					downstream) << "(event ratio)" <<
+    endl;
+  cout << "% hitting target: " << (double) target *100 / (upstream +
+							  downstream) << endl;
+
+  c1->cd (4);
+  c1->cd (4)->SetLogy ();
+  ke->Draw ();
+  ke_trig->Draw ("sames");
+  ke_trig->SetLineColor (3);
+  ke_stop->Draw ("sames");
+  ke_stop->SetLineColor (2);
+
+  c1->cd (5);
+  decayZb->Draw ("colz");
+
+  c1->cd (6);
+  decayZf->Draw ("colz");
+
+  c1->cd (7);
+  decayXY->Draw ("colz");
+  cout<<"meanX: "<<decayXY->GetMean(1)<<", meanY: "<<decayXY->GetMean(2)<<", mean: "<<pow(pow(decayXY->GetMean(1),2)+pow(decayXY->GetMean(2),2),0.5)<<endl;
+  c1->cd (8);
+  tof->Draw ();
+  //decayZ_f->Draw ();
+
+  c1->cd (9);
+  edep_f1->Draw ();
+  edep_f2->Draw ("sames");
+  edep_f2->SetLineColor (2);
+  edep_b1->Draw ("sames");
+  edep_b1->SetLineColor (3);
+  edep_b2->Draw ("sames");
+  edep_b2->SetLineColor (4);
+
+  c1->cd (10);
+  b1->Draw();
+  b2->Draw("sames");
+  b3->Draw("sames");
+  b4->Draw("sames");
+  b1->SetLineColor (1);
+  b2->SetLineColor (2);
+  b3->SetLineColor (3);
+  b4->SetLineColor (4);
+
+  c1->cd (11);
+  polx->Draw ();
+  polx->SetLineColor (2);
+  poly->Draw ("sames");
+  poly->SetLineColor (3);
+  polz->Draw ("sames");
+  polz->SetLineColor (4);
+
+  c1->cd (12);
+  etrig->Draw ();
+
+
+  filename.append (".root");
+
+  char *out = (char *) filename.c_str ();
+  c1->Print (out);
+
+  delete decayZ_b;
+  delete decayZ_f;
+  delete decayXY;
+  delete decayZb;
+  delete decayZf;
+  delete f;
+  delete b;
+  delete f1;
+  delete f2;
+  delete f3;
+  delete f4;
+  delete b1;
+  delete b2;
+  delete b3;
+  delete b4;
+  delete ke;
+  delete tof;
+  delete polx;
+  delete poly;
+  delete polz;
+  delete edep_b1;
+  delete edep_f1;
+  delete edep_b2;
+  delete edep_f2;
+  delete etrig;
+  delete ke_trig;
+  delete ke_stop;
+  delete Afb;
+  delete myfit;
+  delete exp1;
+  delete exp2;
+  delete c1;
+
+m_file->Write ();
+  m_file->Close ();
+
+
+}
+
+void
+MyAna::clear ()
+{
+
+  //  cout << "clear()" << endl;
+}

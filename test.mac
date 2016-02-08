@@ -1,0 +1,302 @@
+# Template suitable for beam profile detectioon with the spin rotator in place
+# Zaher Salman 7/10/2010
+#
+# Thomas Prokscha 22/Nov/2012
+# Moved sample stack on cryostat 3mm downstream to fit to positions in apparatus
+# Changed positions of positron counters according to corrected drawing LEM 37.01.024 (19/Sep/2012)
+#
+# Position downstream detectors: z=+62.5mm  original value: z=+66.5mm
+# Position upstream detectors:   z=-64.0mm  original value: z=-60.0mm
+#
+
+# This is a template mac file for tuning the lem beamline with a spin rotator
+# You can use this to generate a beam envelope profile along z
+
+################################################################################################################
+# -- ROTATION MATRICES --
+################################################################################################################
+
+################################################################################################################
+# -- LEM GEOMETRY --
+################################################################################################################
+
+# WORLD = Laboratory reference frame, the origin is in the centre of the LEM sample tube
+/musr/command construct box World 8000 8000 1000 G4_Galactic 0 0 0 no_logical_volume norot dead -1
+/musr/command visattributes log_World invisible
+
+### Magnetic field at the sample
+/musr/command globalfield BField  8000 8000 1000 uniform 0.0 0.0 0.0 log_World 0 0 1.5 0 0 0 
+
+# Set parameters for particle tracking in an EM field
+/musr/command globalfield setparameter SetLargestAcceptableStep 400000
+/musr/command globalfield setparameter SetMinimumEpsilonStep 5e-5
+/musr/command globalfield setparameter SetMaximumEpsilonStep 0.001
+/musr/command globalfield setparameter SetDeltaOneStep 0.1
+/musr/command globalfield setparameter SetDeltaIntersection 0.01
+/musr/command globalfield printparameters
+
+# TESTING EM FIELD
+/musr/command globalfield printFieldValueAtPoint 0. 0. 0.
+
+###############################################
+#### SET A SPEICAL REGION FOR CARBON FOIL #####
+###############################################
+
+
+###################################################################################
+#########################  P H Y S I C S      P R O C E S S E S  ##################
+###################################################################################
+# Geant 4.9.3
+/musr/command process addDiscreteProcess gamma G4PhotoElectricEffect
+/musr/command process addDiscreteProcess gamma G4ComptonScattering
+/musr/command process addDiscreteProcess gamma G4GammaConversion
+/musr/command process addDiscreteProcess gamma G4RayleighScattering
+/musr/command process addProcess         e-    G4eMultipleScattering    -1  1  1
+/musr/command process addProcess         e-    G4eIonisation            -1  2  2
+/musr/command process addProcess         e-    G4eBremsstrahlung        -1  3  3
+/musr/command process addProcess         e+    G4eMultipleScattering    -1  1  1
+/musr/command process addProcess         e+    G4eIonisation            -1  2  2
+/musr/command process addProcess         e+    G4eBremsstrahlung        -1  3  3
+/musr/command process addProcess         e+    G4eplusAnnihilation      	0 -1  4
+/musr/command process addProcess         mu-   G4MuMultipleScattering   -1  1  1
+/musr/command process addProcess         mu-   G4MuIonisation           -1  2  2
+/musr/command process addProcess         mu-   G4MuBremsstrahlung       -1  3  3
+/musr/command process addProcess         mu-   G4MuPairProduction       -1  4  4
+#/musr/command process addProcess         mu+   G4MuMultipleScattering   -1  1  1
+#/musr/command process addModel           mu+   G4MuMultipleScattering   G4UrbanMscModel92 0
+#/musr/command process addModel           mu+   G4MuMultipleScattering   G4WentzelVIModel 0
+#/musr/command process addProcess         mu+   G4MuIonisation           -1  2  2
+#/musr/command process addProcess         mu+   musrMuFormation           -1  -1  3
+##/musr/command process addDiscreteProcess  Mu   G4MuReflection          
+#/musr/command process addProcess         mu+   G4MuBremsstrahlung       -1  3  3
+#/musr/command process addProcess         mu+   G4MuPairProduction       -1  4  4
+#/musr/command process addDiscreteProcess mu+   G4CoulombScattering
+#/musr/command process addProcess        mu+   G4StepLimiter             -1  -1  5
+
+###################################################################################
+##################  S O M E   O T H E R    P A R A M E T E R S   ##################
+###################################################################################
+# Set the overall range cut
+#/run/setCut 1 mm
+# Set the range cut on a particular volumes (in mm)
+#/musr/command SetUserLimits log_target 0.01
+#/musr/command SetUserLimits log_targetscint 0.01
+#/musr/command SetUserLimits log_M0 0.01
+# Store all events into the ROOT tree or just the interesting ones ? (true is default)
+#/musr/command storeOnlyEventsWithHits false
+# Set the minimum time separation between two subsequent signals in the same detector (in ns)
+#/musr/command signalSeparationTime 0.1
+#
+/musr/run/randomOption 1
+
+################################################################################################################
+# -- Setting simulation PARAMETERS --
+################################################################################################################
+
+# Set the overall range cut (default 0.1 mm)
+#*/run/setCut 1 mm
+
+# Set the range cut on particular volumes (in mm)
+#/musr/command SetUserLimits   log_CFoil 1e-8 -1 -1 -1 -1
+#*/musr/command SetUserLimits log_target 0.01
+#*/musr/command SetUserLimits log_targetscint 0.01
+#*/musr/command SetUserLimits log_cryostatscint 0.01
+
+# Set particle energy cuts on particular volumes (in eV)
+#/musr/command SetUserLimits log_World ustepMax(mm) utrakMax(mm) utimeMax(ns) uekinMin(MeV) urangMin(mm)
+#/musr/command SetUserLimits log_World -1 -1 -1 1e-7 -1
+
+# Store ALL the events in a ROOT tree or just the interesting ones? (default is true)
+#*/musr/command storeOnlyEventsWithHits false
+
+# Set the minimum time separation between two subsequent signals in the same detector (in ns)
+/musr/command signalSeparationTime 0.1
+
+# Override runID number
+#*/musr/run/runID 21
+
+# Set the frequency of event printing
+/musr/run/howOftenToPrintEvent 10000
+
+# RANDOM option choices: (specify the random number generator initialisation)
+# 0 ... no initialisation (default)
+# 1 ... use actual computer time to initialise now
+# 2 ... use event number to initialise at the beginning of each event
+# 3 ... read in the random no. initial values for each event from a file
+/musr/run/randomOption 2
+
+# VISUALIZATION options
+# To enable or disable visualization uncomment one of these lines
+# To modify visualization options edit the file vis.mac
+/vis/disable
+#/control/execute macro/visVRML.mac
+#*/control/execute visdawn.mac
+
+
+###################################################################################
+#########################   R O O T     O U T P U T  ##############################
+###################################################################################
+#/musr/command rootOutput runID off
+#/musr/command rootOutput eventID off
+#/musr/command rootOutput weight off
+#/musr/command rootOutput BFieldAtDecay off
+#/musr/command rootOutput muIniPosX off
+#/musr/command rootOutput muIniPosY off
+#/musr/command rootOutput muIniPosZ off
+#/musr/command rootOutput muIniMomX off
+#/musr/command rootOutput muIniMomY off
+#/musr/command rootOutput muIniMomZ off
+#/musr/command rootOutput muIniPolX off
+#/musr/command rootOutput muIniPolY off
+#/musr/command rootOutput muIniPolZ off
+#/musr/command rootOutput muDecayDetID off
+#/musr/command rootOutput muDecayPosX off
+#/musr/command rootOutput muDecayPosY off
+#/musr/command rootOutput muDecayPosZ off
+#/musr/command rootOutput muDecayTime off
+#/musr/command rootOutput muDecayPolX off
+#/musr/command rootOutput muDecayPolY off
+#/musr/command rootOutput muDecayPolZ off
+#/musr/command rootOutput muTargetTime off
+#/musr/command rootOutput muTargetPolX off
+#/musr/command rootOutput muTargetPolY off
+#/musr/command rootOutput muTargetPolZ off
+#/musr/command rootOutput muM0Time off
+#/musr/command rootOutput muM0PolX off
+#/musr/command rootOutput muM0PolY off
+#/musr/command rootOutput muM0PolZ off
+/musr/command rootOutput muM1Time off
+/musr/command rootOutput muM1PolX off
+/musr/command rootOutput muM1PolY off
+/musr/command rootOutput muM1PolZ off
+/musr/command rootOutput muM2Time off
+/musr/command rootOutput muM2PolX off
+/musr/command rootOutput muM2PolY off
+/musr/command rootOutput muM2PolZ off
+#/musr/command rootOutput posIniMomX off
+#/musr/command rootOutput posIniMomY off
+#/musr/command rootOutput posIniMomZ off
+#/musr/command rootOutput fieldNomVal off
+#/musr/command rootOutput det_ID off
+#/musr/command rootOutput det_edep off
+#/musr/command rootOutput det_edep_el off
+#/musr/command rootOutput det_edep_pos off
+#/musr/command rootOutput det_edep_gam off
+#/musr/command rootOutput det_edep_mup off
+#/musr/command rootOutput det_nsteps off
+#/musr/command rootOutput det_length off
+#/musr/command rootOutput det_start off
+#/musr/command rootOutput det_end off
+#/musr/command rootOutput det_x off
+#/musr/command rootOutput det_y off
+#/musr/command rootOutput det_z off
+#/musr/command rootOutput det_kine off
+/musr/command rootOutput det_VrtxKine off
+/musr/command rootOutput det_VrtxX off
+/musr/command rootOutput det_VrtxY off
+/musr/command rootOutput det_VrtxZ off
+/musr/command rootOutput det_VrtxVolID off
+/musr/command rootOutput det_VrtxProcID off
+/musr/command rootOutput det_VrtxTrackID off
+/musr/command rootOutput det_VrtxParticleID off
+/musr/command rootOutput det_VvvKine off
+/musr/command rootOutput det_VvvX off
+/musr/command rootOutput det_VvvY off
+/musr/command rootOutput det_VvvZ off
+/musr/command rootOutput det_VvvVolID off
+/musr/command rootOutput det_VvvProcID off
+/musr/command rootOutput det_VvvTrackID off
+/musr/command rootOutput det_VvvParticleID off
+### Root variables that are not written out by default, but can be switched on:
+#/musr/command rootOutput fieldIntegralBx on
+#/musr/command rootOutput fieldIntegralBy on
+#/musr/command rootOutput fieldIntegralBz on
+#/musr/command rootOutput fieldIntegralBz1 on
+#/musr/command rootOutput fieldIntegralBz2 on
+#/musr/command rootOutput fieldIntegralBz3 on
+
+/musr/command storeOnlyEventsWithHits true
+
+
+
+################################################################################################################
+# -- Setting PARTICLE GUN parameters --
+################################################################################################################
+
+# Default momentum  direction: 001, i.e. 0z.
+# Default muon spin direction: 100, i.e. 0x.
+# Default particle type: mu+ (can be changed to Mu)
+
+# Set particle type
+#*/gun/particle Mu
+/gun/particle mu+
+
+# Set beam vertex 
+# CFoil at -1144 mm, acceleration starts at -1154.15 mm
+#/gun/vertex 0. 0. -2119.5 mm
+/gun/vertex 0  7.112 0 m
+
+# A point-like uniform beam
+#/gun/vertexsigma 7.5 7.5 0 mm
+
+# Set beam transverse spread (default GAUSSIAN spread)
+# If FWHM = 10 mm ==> sigma = 10/2.354 = 4.2481 mm (last 0 is a dummy value)
+# Negative sigma values => random FLAT RECTANGULAR distribution (area 2x.2y)
+# Use vertexboundary with (vb < sigma_xy) to obtain a CIRCULAR beam spot
+# /gun/vertexsigma 7.5 7.5 0 mm
+#/gun/vertexsigma 9.5 9.5 0 mm
+#/gun/vertexsigma 7.5 7.5 0 mm
+#/gun/vertexboundary 20 -1e6 1e6 mm
+
+# /gun/vertexboundary: rMaxAllowed, zMinAllowed, zMaxAllowed # Beam AND gating
+#*/gun/vertexboundary 7 -1314.4 -1305 mm
+# Without restrictions in z, but only on r:
+#*/gun/vertexboundary 3 -1e6 1e6 mm
+
+# Set beam momentum (USE only as an ALTERNATIVE to setting energy!)
+# /gun/momentum 0 0 29.79 MeV
+#*/gun/momentum 0 0  1.8  MeV
+# Energy loss at p = 1.2 MeV/c (E =  6.8 keV) => 1.23 +/- 0.2 keV
+# Energy loss at p = 1.8 MeV/c (E = 15.3 keV) => 1.25 +/- 0.3 keV
+# 1.2 MeV/c -> 6.8 keV, 1.8 MeV/c -> 15.3 keV
+# muon rest mass = 105.658 MeV/c2
+
+# Set muon energy before hitting TD; a constant field in front of the C-foil accelerates the muons
+# to add 3.38 keV 
+#/gun/kenergy 15.0 keV 
+/gun/momentum 3.094 GeV 
+
+# Set beam momentum direction
+/gun/direction 1.0 0.0 0.0
+
+# Set muon spin direction
+#/gun/muonPolarizVector 0.9848 0 0.17365
+
+
+# Other useful test parameters:
+#
+# FWHM = 3%  ==> sigma = 29.79*0.03/2.354 = 0.37965 MeV/c
+#/gun/momentumsmearing 15 keV
+#---/gun/momentumboundary: pMinAllowed, pMaxAllowed, dummy
+#*/gun/momentumboundary 20 40 0 MeV
+#---/gun/tilt: xangle, yangle, dummy
+#*/gun/tilt 0  0.0   0 deg
+#---/gun/tiltsigma 1.5 1.5 0 deg
+#*/gun/tiltsigma 1.5 1.5 0 deg
+#*/gun/pitch 0.0  deg
+#---/gun/decaytimelimits: decayMin, decayMax, decayTime
+#*/gun/decaytimelimits 10400 10420 2197.03 ns
+#/gun/tiltsigma 2.0 2.0 0 deg
+
+# Selectively inactivate or activate sensitive detectors
+#*/hits/inactivate /musr/ScintSD
+
+# Only for code debugging!
+/tracking/verbose 1
+/control/verbose 1
+
+# BEAM ON
+#/run/beamOn 1000000
+#/run/beamOn 1000000
+/run/beamOn 1
+ 

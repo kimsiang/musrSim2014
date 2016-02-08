@@ -1,0 +1,111 @@
+void
+plot2014()
+{
+
+ gStyle->SetOptStat(0000);
+
+  char title1[50], title2[50], title3[50], title4[50], title5[50];
+  TCanvas *c1 = new TCanvas ("c1", "c1", 1200, 800);
+
+  sprintf (title1, "musr_201410.root.root");
+  sprintf (title2, "musr_201411.root.root");
+  sprintf (title3, "musr_201412.root.root");
+
+  TFile *f[3];
+
+  f[0] = new TFile (title1);
+  f[1] = new TFile (title2);
+  f[2] = new TFile (title3);
+
+
+  TH1F *h[6];
+  TH2F *h2[3];
+  TH2F *h3;
+  c1->Divide (3, 2);
+
+  // scale them to bin 101
+
+
+  c1->cd (1);
+  for (int i = 0; i < 3; i++)
+    {
+      h[i] = (TH1F *) f[i]->FindObjectAny ("forward");
+      h[i]->Rebin (4);
+/*      for (int k = 1; k < 1437; k++)
+	{
+	  h[i]->SetBinContent (k, h[i]->GetBinContent (k) / exp (-h[i]->GetBinCenter (k) / 2.198));
+	}
+*/
+      if (i == 0)
+	{
+	  h[i]->Draw ();
+	}
+      h[i]->Draw ("sames");
+      h[i]->SetLineColor (i + 2);
+      h[i]->SetLineWidth (2);
+      h[i]->GetXaxis ()->SetRangeUser (-0.2, 10);
+//  h[i] ->Scale(h[0]->GetBinContent(101)/h[i]->GetBinContent(101));
+    }
+
+  leg_hist = new TLegend (0.63, 0.68, 0.88, 0.88);
+  leg_hist->AddEntry (h[0], " 0%", "lp");
+  leg_hist->AddEntry (h[1], " 100% (reflection)", "lp");
+  leg_hist->AddEntry (h[2], " 100% (no reflection)", "lp");
+  leg_hist->SetFillColor (0);
+  leg_hist->SetLineColor (1);
+  leg_hist->SetShadowColor (0);
+  leg_hist->Draw ();
+
+  c1->cd (2);
+  for (int i = 0; i < 3; i++)
+    {
+      h[3 + i] = (TH1F *) f[i]->FindObjectAny ("backward");
+      h[3 + i]->Rebin (4);
+      /*  for (int k = 1; k < 1437; k++)
+         {
+         h[5+i]->SetBinContent (k, h[5+i]->GetBinContent (k) / exp (-h[5+i]->GetBinCenter (k) / 2.198));
+         }
+       */ if (i == 0)
+	{
+	  h[3 + i]->Draw ();
+	}
+      h[3 + i]->Draw ("sames");
+      h[3 + i]->SetLineColor (i + 2);
+      h[3 + i]->SetLineWidth (2);
+      h[3 + i]->GetXaxis ()->SetRangeUser (-0.2, 10);
+    }
+
+  leg_hist = new TLegend (0.63, 0.68, 0.88, 0.88);
+  leg_hist->AddEntry (h[3], " 0%", "lp");
+  leg_hist->AddEntry (h[4], " 100% (reflection)", "lp");
+  leg_hist->AddEntry (h[5], " 100% (no reflection)", "lp");
+  leg_hist->SetFillColor (0);
+  leg_hist->SetLineColor (1);
+  leg_hist->SetShadowColor (0);
+  leg_hist->Draw ();
+
+  for (int i = 0; i < 3; i++)
+    {
+  c1->cd (4+i);
+      h2[i] = (TH2F *) f[i]->FindObjectAny ("decayZb");
+      h2[i]->GetYaxis ()->SetRangeUser (-5,3);
+      h2[i]->Draw ("colz");
+ }
+
+//  h[5]->GetYaxis ()->SetRangeUser (0, h[9]->GetBinContent (116) * 1.2);
+//  h[0]->GetYaxis ()->SetRangeUser (0, h[4]->GetBinContent (116) * 1.2);
+
+  h[0]->SetTitle ("positron time spectra (downstream)");
+  h[3]->SetTitle ("positron time spectra (upstream)");
+
+  h2[0]->SetTitle ("0%");
+  h2[1]->SetTitle ("100% (reflection)");
+  h2[2]->SetTitle ("100% (no reflection)");
+
+  c1->cd(3);
+ 
+  h3 = (TH2F *) f[1]->FindObjectAny ("decayZr");
+  h3->GetXaxis ()->SetRangeUser (0,60);
+  h3->GetYaxis ()->SetRangeUser (-50,20);
+  h3->Draw("colz");
+}

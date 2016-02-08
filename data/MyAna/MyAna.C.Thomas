@@ -1,0 +1,278 @@
+#include "MyAna.h"
+#include <iostream>
+#include <cmath>
+#include <omp.h>
+#include <TROOT.h>
+#include <TCanvas.h>
+
+#include "TSystem.h"
+void
+MyAna::Loop (string filename)
+{
+//  cout << "Loop()" << endl;
+
+// initialize ();
+  initialize ();
+
+  if (fChain == 0)
+    return;
+
+  Long64_t nentries = fChain->GetEntriesFast ();
+// nentries = 1000;
+  Int_t nbytes = 0, nb = 0;
+  for (Long64_t jentry = 0; jentry < nentries; jentry++)
+    {
+      Long64_t ientry = LoadTree (jentry);
+      if (ientry < 0)
+	break;
+      nb = fChain->GetEntry (jentry);
+      nbytes += nb;
+
+      clear ();
+      execute ();
+
+
+    }
+
+  finalize (filename);
+
+}
+
+void
+MyAna::initialize ()
+{
+
+// cout << "initialize()" << endl;
+  upstream = 0;
+  downstream = 0;
+  target = 0;
+  nLU = 0;
+  nBU = 0;
+  nRU = 0;
+  nTU = 0;
+  nLD = 0;
+  nBD = 0;
+  nRD = 0;
+  nTD = 0;
+
+  int nbin = 600;
+
+  f = new TH1F ("forward", "f", nbin, 0, 12);
+  b = new TH1F ("backward", "b", nbin, 0, 12);
+  ke = new TH1F ("kinetic", "ke", nbin, 0, 20);
+  edep = new TH1F ("edep", "edep", nbin, 0, 5);
+  ke_trig = new TH1F ("ke_trig", "ke_trig", nbin, 0, 20);
+  Afb = new TH1F ("Afb", "Afb", nbin, 0, 12);
+  decayZ_b = new TH1F ("decayZ_b", "decayZ_b", 100, -70, 30);
+  decayZ_f = new TH1F ("decayZ_f", "decayZ_f", 100, -70, 30);
+  decayXY = new TH2F ("decayXY", "decayXY", 100, -50, 50, 100, -50, 50);
+  decayZf = new TH2F ("decayZf", "decayZf", 1200, 0, 12, 100, -70, 30);
+  decayZb = new TH2F ("decayZb", "decayZb", 1200, 0, 12, 100, -70, 30);
+  myfit = new TF1 ("myfit", "[0]", 1, 5);
+  exp1 = new TF1 ("exp1", "[0]*exp(-x/2.2)+[1]", 1, 5);
+  exp2 = new TF1 ("exp2", "[0]*exp(-x/2.2)+[1]", 1, 5);
+
+}
+
+void
+MyAna::execute ()
+{
+//  cout << "execute()" << endl;
+//  cout << "################################" << endl;
+//  cout << "  eventID: " << eventID << endl;
+
+
+  bool trig = false;
+  bool inside = false;
+  int ncount = 0;
+  int id[8] = { };
+  double tstart = 0;
+  double tend = 0;
+  double eCut=0.5;
+
+//  for(int i=0; i<save_n; i++){
+//  if(save_detID[i]==901&&save_particleID[i]==-13&&save_ke[i]>0.003) 
+//  break;  
+  //  }
+  double total_edep = 0;
+
+  for (int i = 0; i < det_n; i++)
+    {
+
+      if (det_ID[i] == 65)
+	{
+	  total_edep += det_edep[i] * 1000;
+	  inside = true;
+	  tstart = det_time_start[i];
+	}
+    }
+  if (inside && total_edep > 0.4)
+    {
+      trig = true;
+    }
+
+  if(inside){edep->Fill(total_edep);}
+
+
+      // Hist in Back detector (1-16) coincidence (33-48)
+      for (Int_t i=0; i<det_n; i++) {
+	if (det_ID[i]<=16 && det_ID[i] >=1) {
+	  if (det_edep[i]>eCut){
+	    for (Int_t j=0; j<det_n; j++){ 
+	      if (det_ID[j]<=48 && det_ID[j] >=33) {
+		if (det_edep[j]>eCut){
+		  b->Fill(det_time_start[j]);
+		  decayZ_f->Fill(det_z[j]);
+		  break; //fill only once
+		}
+	      }
+	    }
+	  }
+	}
+      }
+
+      // Hist in Forw I detector (17-32) coincidence (49-64)
+      for (Int_t i=0; i<det_n; i++) {
+	if (det_ID[i]>=17 && det_ID[i]<=32) {
+	  if (det_edep[i]>eCut){
+	    for (Int_t j=0; j<det_n; j++){ 
+	      if (det_ID[j]<=64 && det_ID[j] >=49) {
+		if (det_edep[j]>eCut){
+		  f->Fill(det_time_start[j]);
+		  decayZ_f->Fill(det_z[j]);
+		  break; //fill only once
+		}
+	      }
+	    }
+	  }
+	}
+      }
+
+
+      for (int i = 0; i < save_n; i++)
+	{
+	  if (save_detID[i] == 901 && save_particleID[i] == -13)
+	    {
+	      //  cout<<"ke:"<< save_ke[i] <<endl;
+	      ke->Fill (save_ke[i] * 1000);
+	      if (trig)
+		{
+		  ke_trig->Fill (save_ke[i] * 1000);
+		}
+	    }
+	}
+
+
+// cout<<"upstream: "<<upstream<<", downstream: "<<downstream<<endl;
+}
+
+void
+MyAna::finalize (string filename)
+{
+  TCanvas *c1 = new TCanvas ("c1", "c1", 1400, 1000);
+/*  cout << "finalize()" << endl;
+  cout << "total: " << upstream+downstream << ", upstream: " << upstream << ", downstream: " << downstream << endl;
+  cout << "asymmetry: " << (double) (upstream - downstream) / (upstream + downstream) 
+       << ", target: " << target << "(" << (double) target / (upstream +  downstream) << ")" << endl;
+*/
+
+  cout << "nLD: " << nLD << endl;
+  cout << "nLU: " << nLU << endl;
+  cout << "nBD: " << nBD << endl;
+  cout << "nBU: " << nBU << endl;
+  cout << "nRD: " << nRD << endl;
+  cout << "nRU: " << nRU << endl;
+  cout << "nTD: " << nTD << endl;
+  cout << "nTU: " << nTU << endl;
+  cout << "Downstream: " << downstream << endl;
+  cout << "Upstream: " << upstream << endl;
+
+  double fw = 0;
+  double bw = 0;
+
+#pragma omp parallel for
+  for (int i = 1; i < 1201; i++)
+    {
+      fw = f->GetBinContent (i);
+      bw = b->GetBinContent (i);
+      if (fw != 0 && bw != 0)
+	{
+	  Afb->SetBinContent (i, (bw - fw) / (bw + fw));
+	}
+      if (fw == 0 || bw == 0)
+	{
+	  Afb->SetBinContent (i, 0);
+	}
+    }
+
+  c1->Divide (3, 3);
+  c1->cd (1);
+  b->Draw ();
+  exp1->SetParameters (100, 20);
+  b->Fit ("exp1", "NQR");
+  c1->cd (2);
+  f->Draw ();
+  exp2->SetParameters (100, 20);
+  f->Fit ("exp2", "NQR");
+  c1->cd (3);
+  Afb->Draw ();
+  myfit->SetParameter (0, 0.3);
+  Afb->Fit ("myfit", "QR");
+  cout << "Afb (fit): " << myfit->
+    GetParameter (0) << ", (event ratio): " << (double) (upstream -
+							 downstream) /
+    (upstream + downstream) << " " << (double) target / (upstream +
+							 downstream) << endl;
+
+  c1->cd (4);
+  decayZb->Draw ("colz");
+
+  c1->cd (5);
+  decayZf->Draw ("colz");
+
+  c1->cd (6);
+  decayXY->Draw ("colz");
+  
+  c1->cd (7);
+  c1->cd (7)->SetLogy ();
+  ke->Draw ();
+  ke_trig->Draw ("sames");
+  ke_trig->SetLineColor (2);
+
+  c1->cd (8);
+  c1->cd (8)->SetLogy ();
+  decayZ_f->Draw ();
+
+  c1->cd (9);
+/*  ke->Draw ();
+  ke_trig->Draw ("sames");
+  ke_trig->SetLineColor (2);
+*/
+  edep->Draw();
+ 
+  filename.append (".root");
+  char *out = (char *) filename.c_str ();
+  c1->Print (out);
+
+  delete decayZ_b;
+  delete decayZ_f;
+  delete decayXY;
+  delete decayZb;
+  delete decayZf;
+  delete f;
+  delete b;
+  delete ke;
+  delete edep;
+  delete ke_trig;
+  delete Afb;
+  delete myfit;
+  delete exp1;
+  delete exp2;
+}
+
+void
+MyAna::clear ()
+{
+
+  //  cout << "clear()" << endl;
+}

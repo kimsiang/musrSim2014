@@ -1,0 +1,2490 @@
+#include "MyAna.h"
+#include "OQMaps/checkOQ.C"
+#include "OQMaps/checkOQ.h"
+#include "robustIsEMDefs.C"
+#include <iostream>
+#include <stdio.h>
+#include <time.h>
+#include <algorithm>
+#include <functional>
+#include <fstream>
+#include <map>
+#include "Particle.h"
+#include "EMJESfix.h"
+using namespace std;
+
+class Sort_by_Pt
+{
+public:
+  bool operator                              () (Particle * t1,
+						 Particle * t2) const
+  {
+    return (t1->Pt () > t2->Pt ());
+  }
+};
+
+void MyAna::Loop(){
+
+  initialize();
+
+  // -- Get Good Run List -- Method 1//
+  
+  grlR = new TGoodRunsListReader();
+  string sname1 = "../GoodRunList/LBCollection_v20100820_01.xml";
+  cout << "XML to load: " << sname1.c_str() << endl;
+  grlR->SetXMLFile(sname1.c_str());
+  grlR->Interpret();
+  Root::TGoodRunsList grl1;
+  grl1 = grlR->GetMergedGoodRunsList();
+//  grl1.Summary(true);
+
+  string sname2 = "../GoodRunList/LBCollection_v20100820_02.xml";
+  cout << "XML to load: " << sname2.c_str() << endl;
+  grlR->SetXMLFile(sname2.c_str());
+  grlR->Interpret();
+  Root::TGoodRunsList grl2;
+  grl2 = grlR->GetMergedGoodRunsList();
+//  grl2.Summary(true);
+
+  string sname3 = "../GoodRunList/LBCollection_v20100820_03.xml";
+  cout << "XML to load: " << sname3.c_str() << endl;
+  grlR->SetXMLFile(sname3.c_str());
+  grlR->Interpret();
+  Root::TGoodRunsList grl3;
+  grl3 = grlR->GetMergedGoodRunsList();
+//  grl3.Summary(true);
+
+  string sname4 = "../GoodRunList/LBCollection_v20100829_04.xml";
+  cout << "XML to load: " << sname4.c_str() << endl;
+  grlR->SetXMLFile(sname4.c_str());
+  grlR->Interpret();
+  Root::TGoodRunsList grl4;
+  grl4 = grlR->GetMergedGoodRunsList();
+//  grl4.Summary(true);
+
+  string sname5 = "../GoodRunList/LBCollection_v20100902_05.xml";
+  cout << "XML to load: " << sname5.c_str() << endl;
+  grlR->SetXMLFile(sname5.c_str());
+  grlR->Interpret();
+  Root::TGoodRunsList grl5;
+  grl5 = grlR->GetMergedGoodRunsList();
+//  grl5.Summary(true);
+
+  string sname6 = "../GoodRunList/LBCollection_v20101005_06.xml";
+  cout << "XML to load: " << sname6.c_str() << endl;
+  grlR->SetXMLFile(sname6.c_str());
+  grlR->Interpret();
+  Root::TGoodRunsList grl6;
+  grl6 = grlR->GetMergedGoodRunsList();
+//  grl6.Summary(true);
+
+  string sname7 = "../GoodRunList/LBCollection_v20101008_07.xml";
+  cout << "XML to load: " << sname7.c_str() << endl;
+  grlR->SetXMLFile(sname7.c_str());
+  grlR->Interpret();
+  Root::TGoodRunsList grl7;
+  grl7 = grlR->GetMergedGoodRunsList();
+//  grl7.Summary(true);
+
+  string sname8 = "../GoodRunList/LBCollection_v20101015_08.xml";
+  cout << "XML to load: " << sname8.c_str() << endl;
+  grlR->SetXMLFile(sname8.c_str());
+  grlR->Interpret();
+  Root::TGoodRunsList grl8;
+  grl8 = grlR->GetMergedGoodRunsList();
+//  grl8.Summary(true);
+
+  string sname9 = "../GoodRunList/LBCollection_v20101022_09.xml";
+  cout << "XML to load: " << sname9.c_str() << endl;
+  grlR->SetXMLFile(sname9.c_str());
+  grlR->Interpret();
+  Root::TGoodRunsList grl9;
+  grl9 = grlR->GetMergedGoodRunsList();
+//  grl9.Summary(true);
+
+  string sname10 = "../GoodRunList/LBCollection_v20101026_10.xml";
+  cout << "XML to load: " << sname10.c_str() << endl;
+  grlR->SetXMLFile(sname10.c_str());
+  grlR->Interpret();
+  Root::TGoodRunsList grl10;
+  grl10 = grlR->GetMergedGoodRunsList();
+//  grl10.Summary(true);
+
+  string sname11 = "../GoodRunList/LBCollection_v20101103_11.xml";
+  cout << "XML to load: " << sname11.c_str() << endl;
+  grlR->SetXMLFile(sname11.c_str());
+  grlR->Interpret();
+  Root::TGoodRunsList grl11;
+  grl11 = grlR->GetMergedGoodRunsList();
+//  grl11.Summary(true);
+
+  // get sum of grl1 and grl2 -> grl
+//  Root::TGoodRunsList grl4;
+//  grl4 =  grl1.GetSumWith(grl2);
+  Root::TGoodRunsList grl;
+  grl =  grl1.GetSumWith(grl2.GetSumWith(grl3.GetSumWith(grl4.GetSumWith(grl5.GetSumWith(grl6.GetSumWith(grl7.GetSumWith(grl8.GetSumWith(grl9.GetSumWith(grl10.GetSumWith(grl11))))))))));
+ // grl.Summary(true);
+
+  if (fChain == 0)
+    return;
+
+  Long64_t nentries = fChain->GetEntriesFast ();
+// nentries=1000000;
+  Int_t nbytes = 0, nb = 0;
+  for (Long64_t jentry = 0; jentry < nentries; jentry++)
+    {
+      Long64_t ientry = LoadTree (jentry);
+      if (ientry < 0)
+	break;
+      nb = fChain->GetEntry (jentry);
+      nbytes += nb;
+
+ ++all[0];
+
+
+  // If it is data, use GRL to preselect events
+  if(Data_MC==1){
+
+     if(!grl.HasRunLumiBlock(RunNumber,LumiBlock)){
+ 
+        continue;
+    }
+  
+  }
+ 
+
+    clear ();
+
+    execute ();
+
+     }
+
+    finalize ();
+
+}
+
+void MyAna::initialize(){
+
+  // initialize 
+//  cout << "Initializing analysis" << endl;
+
+  Data_MC=2;
+
+  if(Data_MC==1){
+  //m_file = new TFile ("data10_7TeV_Muons_EF_2mu6.root", "recreate");
+  m_file = new TFile ("test_Data.root", "recreate");
+  }
+  
+  if(Data_MC==2){
+  
+  //m_file = new TFile ("test_MC.root", "recreate");
+  //m_file = new TFile ("pythia_Ztautau_1Lepton.root", "recreate");
+  //m_file = new TFile ("pythia_jetjet_1muon_J0.root", "recreate");
+  //m_file = new TFile ("redo_pythia_jetjet_1muon_J5.root", "recreate");
+  //m_file = new TFile ("redo_pythia_jetjet_1muon_J.root", "recreate");
+  //m_file = new TFile ("redo_bbbarNp2.root", "recreate");
+  //m_file = new TFile ("redo_bbbar.root", "recreate");
+  //m_file = new TFile ("redo_ttbar.root", "recreate");
+  //m_file = new TFile ("ZZ_2l2tau.root", "recreate");
+  //m_file = new TFile ("ZZ_Herwig.root", "recreate");
+  // m_file = new TFile ("PythiaB_bbmu4mu4X.root", "recreate");
+  //m_file = new TFile ("PythiaB_ccmu4mu4X.root", "recreate");
+  // m_file = new TFile ("PythiaDrellYan_mumu.root", "recreate");
+  //m_file = new TFile ("NMSSM_7TeV_VBF.root", "recreate");
+  m_file = new TFile ("NMSSM_7TeV_redotaurec_VBF_MH100MA5.root", "recreate");
+
+  }
+
+  m_Taujetllh = new TH1D ("Taujetllh", "Taujetllh", 600, -30, 30);
+  m_EmRadius = new TH1D ("EmRadius", "EmRadius", 100, 0, 0.5);
+  m_NTrack = new TH1D ("NTrack", "NTrack", 10, 0, 10);
+  m_Charge = new TH1D ("Charge", "Charge", 10, -5, 5);
+  m_IsoFrac = new TH1D ("IsoFrac", "IsoFrac", 100, 0, 1);
+  m_CenFrac = new TH1D ("CenFrac", "CenFrac", 100, 0, 1);
+  m_StrWid2 = new TH1D ("StrWid2", "StrWid2", 100, 0, 0.1);
+  m_NStrip = new TH1D ("NStrip", "NStrip", 20, 0, 20);
+  m_AnnIsoFrac = new TH1D ("AnnIsoFrac", "AnnIsoFrac", 100, 0, 1);
+  m_NAssTrkCore = new TH1D ("NAssTrkCore", "NAssTrkCore", 5, 0, 5);
+  m_NAssTrkIso = new TH1D ("NAssTrkIso", "NAssTrkIso", 5, 0, 5);
+  m_RWid2Trk3P = new TH1D ("RWid2Trk3P", "RWid2Trk3P", 100, 0, 0.01);
+  m_MassTrk3P = new TH1D ("MassTrk3P", "MassTrk3P", 100, 0, 0.1);
+  m_SignDOTrk3P = new TH1D ("SignDOTrk3P", "SignDOTrk3P", 100, 0, 10);
+  m_IpSigLeadTrack = new TH1D ("IpSigLeadTrack", "IpSigLeadTrack", 100, 0, 10);
+  m_LeadTrackPt = new TH1D ("LeadTrackPt", "LeadTrackPt", 300, 0, 300);
+  m_SumTrackPt = new TH1D ("SumTrackPt", "SumTrackPt", 300, 0, 300);
+  m_EtOverPtLeadTrack = new TH1D ("EtOverPtLeadTrack", "EtOverPtLeadTrack", 100, 0, 10);
+  m_HadRadius = new TH1D ("HadRadius", "HadRadius", 100, 0, 1);
+
+  ///////////////////////////////////////////////////////
+  ///
+  ///    all selected muons and taujets distribution
+  ///
+  //////////////////////////////////////////////////////
+
+  m_n_ele = new TH1D("n_ele","n_ele",15,0,15);
+  m_ele_pt = new TH1D("ele_pt","ele_pt",50,0.0,200.0);
+  m_ele_eta = new TH1D("ele_eta","ele_eta",50,-3.0,3.0);
+  m_ele_phi = new TH1D("ele_phi","ele_phi",50,-3.142,3.142);
+
+  m_n_mu = new TH1D("n_mu","n_mu",15,0,15);
+  m_mu_pt = new TH1D("mu_pt","mu_pt",50,0.0,200.0);
+  m_mu_eta = new TH1D("mu_eta","mu_eta",50,-3.0,3.0);
+  m_mu_phi = new TH1D("mu_phi","mu_phi",50,-3.142,3.142);
+ 
+  m_mu_etcone20overpt = new TH1D("mu_etcone20overpt","mu_etcone20overpt",100,0,5.0);
+
+  m_n_taujet = new TH1D("n_taujet","n_taujet",15,0,15);
+  m_tau_pt = new TH1D("tau_pt","tau_pt",50,0.0,200.0);
+  m_tau_eta = new TH1D("tau_eta","tau_eta",50,-3.0,3.0);
+  m_tau_phi = new TH1D("tau_phi","tau_phi",50,-3.142,3.142);
+
+  m_n_jet = new TH1D("n_jet","n_jet",15,0,15);
+  m_jet_pt = new TH1D("Jet_Pt","Jet_Pt",50,0.0,200.0);
+  m_jet_eta = new TH1D("Jet_Eta","Jet_Eta",50,-3.0,3.0);
+  m_jet_phi = new TH1D("Jet_Phi","Jet_Phi",50,-3.142,3.142);
+
+  //////////////////////////////
+  //
+  //        Missing ET
+  //
+  /////////////////////////////  
+
+  m_MET_cut1 = new TH1D("MET_cut1","MET_cut1",50,0,200);
+  m_MET_cut2 = new TH1D("MET_cut2","MET_cut2",50,0,200);
+  m_MET_cut3 = new TH1D("MET_cut3","MET_cut3",50,0,200);
+  m_MET_cut4 = new TH1D("MET_cut4","MET_cut4",50,0,200);
+  m_MET_cut5 = new TH1D("MET_cut5","MET_cut5",50,0,200);
+  m_MET_cut6 = new TH1D("MET_cut6","MET_cut6",50,0,200);
+  m_MET_cut7 = new TH1D("MET_cut7","MET_cut7",50,0,200);
+
+  /////////////////////////////////////////
+  ///
+  ///    1st leading muon distribution
+  ///
+  /////////////////////////////////////////
+
+  // mu1_pt
+  m_mu1_pt_cut1 = new TH1D("mu1_pt_cut1","mu1_pt_cut1",50,0.0,200.0);
+  m_mu1_pt_cut2 = new TH1D("mu1_pt_cut2","mu1_pt_cut2",50,0.0,200.0);
+  m_mu1_pt_cut3 = new TH1D("mu1_pt_cut3","mu1_pt_cut3",50,0.0,200.0);
+  m_mu1_pt_cut4 = new TH1D("mu1_pt_cut4","mu1_pt_cut4",50,0.0,200.0);
+  m_mu1_pt_cut5 = new TH1D("mu1_pt_cut5","mu1_pt_cut5",50,0.0,200.0);
+  m_mu1_pt_cut6 = new TH1D("mu1_pt_cut6","mu1_pt_cut6",50,0.0,200.0);
+  m_mu1_pt_cut7 = new TH1D("mu1_pt_cut7","mu1_pt_cut7",50,0.0,200.0);
+
+  // mu1_eta
+  m_mu1_eta_cut1 = new TH1D("mu1_eta_cut1","mu1_eta_cut1",50,-3.0,3.0);
+  m_mu1_eta_cut2 = new TH1D("mu1_eta_cut2","mu1_eta_cut2",50,-3.0,3.0);
+  m_mu1_eta_cut3 = new TH1D("mu1_eta_cut3","mu1_eta_cut3",50,-3.0,3.0);
+  m_mu1_eta_cut4 = new TH1D("mu1_eta_cut4","mu1_eta_cut4",50,-3.0,3.0);
+  m_mu1_eta_cut5 = new TH1D("mu1_eta_cut5","mu1_eta_cut5",50,-3.0,3.0);
+  m_mu1_eta_cut6 = new TH1D("mu1_eta_cut6","mu1_eta_cut6",50,-3.0,3.0);
+  m_mu1_eta_cut7 = new TH1D("mu1_eta_cut7","mu1_eta_cut7",50,-3.0,3.0);
+
+  // mu1_phi
+  m_mu1_phi_cut1 = new TH1D("mu1_phi_cut1","mu1_phi_cut1",50,-3.142,3.142);
+  m_mu1_phi_cut2 = new TH1D("mu1_phi_cut2","mu1_phi_cut2",50,-3.142,3.142);
+  m_mu1_phi_cut3 = new TH1D("mu1_phi_cut3","mu1_phi_cut3",50,-3.142,3.142);
+  m_mu1_phi_cut4 = new TH1D("mu1_phi_cut4","mu1_phi_cut4",50,-3.142,3.142);
+  m_mu1_phi_cut5 = new TH1D("mu1_phi_cut5","mu1_phi_cut5",50,-3.142,3.142);
+  m_mu1_phi_cut6 = new TH1D("mu1_phi_cut6","mu1_phi_cut6",50,-3.142,3.142);
+  m_mu1_phi_cut7 = new TH1D("mu1_phi_cut7","mu1_phi_cut7",50,-3.142,3.142);
+
+  /////////////////////////////////////////
+  ///
+  ///    2nd leading muon distribution
+  ///
+  /////////////////////////////////////////
+  
+  // mu2_pt
+  m_mu2_pt_cut1 = new TH1D("mu2_pt_cut1","mu2_pt_cut1",50,0.0,200.0);
+  m_mu2_pt_cut2 = new TH1D("mu2_pt_cut2","mu2_pt_cut2",50,0.0,200.0);
+  m_mu2_pt_cut3 = new TH1D("mu2_pt_cut3","mu2_pt_cut3",50,0.0,200.0);
+  m_mu2_pt_cut4 = new TH1D("mu2_pt_cut4","mu2_pt_cut4",50,0.0,200.0);
+  m_mu2_pt_cut5 = new TH1D("mu2_pt_cut5","mu2_pt_cut5",50,0.0,200.0);
+  m_mu2_pt_cut6 = new TH1D("mu2_pt_cut6","mu2_pt_cut6",50,0.0,200.0);
+  m_mu2_pt_cut7 = new TH1D("mu2_pt_cut7","mu2_pt_cut7",50,0.0,200.0);
+
+  // mu2_eta
+  m_mu2_eta_cut1 = new TH1D("mu2_eta_cut1","mu2_eta_cut1",50,-3.0,3.0);
+  m_mu2_eta_cut2 = new TH1D("mu2_eta_cut2","mu2_eta_cut2",50,-3.0,3.0);
+  m_mu2_eta_cut3 = new TH1D("mu2_eta_cut3","mu2_eta_cut3",50,-3.0,3.0);
+  m_mu2_eta_cut4 = new TH1D("mu2_eta_cut4","mu2_eta_cut4",50,-3.0,3.0);
+  m_mu2_eta_cut5 = new TH1D("mu2_eta_cut5","mu2_eta_cut5",50,-3.0,3.0);
+  m_mu2_eta_cut6 = new TH1D("mu2_eta_cut6","mu2_eta_cut6",50,-3.0,3.0);
+  m_mu2_eta_cut7 = new TH1D("mu2_eta_cut7","mu2_eta_cut7",50,-3.0,3.0);
+
+  // mu2_phi
+  m_mu2_phi_cut1 = new TH1D("mu2_phi_cut1","mu2_phi_cut1",50,-3.142,3.142);
+  m_mu2_phi_cut2 = new TH1D("mu2_phi_cut2","mu2_phi_cut2",50,-3.142,3.142);
+  m_mu2_phi_cut3 = new TH1D("mu2_phi_cut3","mu2_phi_cut3",50,-3.142,3.142);
+  m_mu2_phi_cut4 = new TH1D("mu2_phi_cut4","mu2_phi_cut4",50,-3.142,3.142);
+  m_mu2_phi_cut5 = new TH1D("mu2_phi_cut5","mu2_phi_cut5",50,-3.142,3.142);
+  m_mu2_phi_cut6 = new TH1D("mu2_phi_cut6","mu2_phi_cut6",50,-3.142,3.142);
+  m_mu2_phi_cut7 = new TH1D("mu2_phi_cut7","mu2_phi_cut7",50,-3.142,3.142);
+
+  /////////////////////////////////////////
+  ///
+  ///    1st leading taujet distribution
+  ///
+  /////////////////////////////////////////
+
+  // tau1_pt
+  m_tau1_pt_cut1 = new TH1D("tau1_pt_cut1","tau1_pt_cut1",50,0.0,200.0);
+  m_tau1_pt_cut2 = new TH1D("tau1_pt_cut2","tau1_pt_cut2",50,0.0,200.0);
+  m_tau1_pt_cut3 = new TH1D("tau1_pt_cut3","tau1_pt_cut3",50,0.0,200.0);
+  m_tau1_pt_cut4 = new TH1D("tau1_pt_cut4","tau1_pt_cut4",50,0.0,200.0);
+  m_tau1_pt_cut5 = new TH1D("tau1_pt_cut5","tau1_pt_cut5",50,0.0,200.0);
+  m_tau1_pt_cut6 = new TH1D("tau1_pt_cut6","tau1_pt_cut6",50,0.0,200.0);
+  m_tau1_pt_cut7 = new TH1D("tau1_pt_cut7","tau1_pt_cut7",50,0.0,200.0);
+
+  // tau1_eta
+  m_tau1_eta_cut1 = new TH1D("tau1_eta_cut1","tau1_eta_cut1",50,-3.0,3.0);
+  m_tau1_eta_cut2 = new TH1D("tau1_eta_cut2","tau1_eta_cut2",50,-3.0,3.0);
+  m_tau1_eta_cut3 = new TH1D("tau1_eta_cut3","tau1_eta_cut3",50,-3.0,3.0);
+  m_tau1_eta_cut4 = new TH1D("tau1_eta_cut4","tau1_eta_cut4",50,-3.0,3.0);
+  m_tau1_eta_cut5 = new TH1D("tau1_eta_cut5","tau1_eta_cut5",50,-3.0,3.0);
+  m_tau1_eta_cut6 = new TH1D("tau1_eta_cut6","tau1_eta_cut6",50,-3.0,3.0);
+  m_tau1_eta_cut7 = new TH1D("tau1_eta_cut7","tau1_eta_cut7",50,-3.0,3.0);
+
+  // tau1_phi
+  m_tau1_phi_cut1 = new TH1D("tau1_phi_cut1","tau1_phi_cut1",50,-3.142,3.142);
+  m_tau1_phi_cut2 = new TH1D("tau1_phi_cut2","tau1_phi_cut2",50,-3.142,3.142);
+  m_tau1_phi_cut3 = new TH1D("tau1_phi_cut3","tau1_phi_cut3",50,-3.142,3.142);
+  m_tau1_phi_cut4 = new TH1D("tau1_phi_cut4","tau1_phi_cut4",50,-3.142,3.142);
+  m_tau1_phi_cut5 = new TH1D("tau1_phi_cut5","tau1_phi_cut5",50,-3.142,3.142);
+  m_tau1_phi_cut6 = new TH1D("tau1_phi_cut6","tau1_phi_cut6",50,-3.142,3.142);
+  m_tau1_phi_cut7 = new TH1D("tau1_phi_cut7","tau1_phi_cut7",50,-3.142,3.142);
+
+  /////////////////////////////////////////
+  ///
+  ///    2nd leading taujet distribution
+  ///
+  /////////////////////////////////////////
+  
+  // tau2_pt
+  m_tau2_pt_cut1 = new TH1D("tau2_pt_cut1","tau2_pt_cut1",50,0.0,200.0);
+  m_tau2_pt_cut2 = new TH1D("tau2_pt_cut2","tau2_pt_cut2",50,0.0,200.0);
+  m_tau2_pt_cut3 = new TH1D("tau2_pt_cut3","tau2_pt_cut3",50,0.0,200.0);
+  m_tau2_pt_cut4 = new TH1D("tau2_pt_cut4","tau2_pt_cut4",50,0.0,200.0);
+  m_tau2_pt_cut5 = new TH1D("tau2_pt_cut5","tau2_pt_cut5",50,0.0,200.0);
+  m_tau2_pt_cut6 = new TH1D("tau2_pt_cut6","tau2_pt_cut6",50,0.0,200.0);
+  m_tau2_pt_cut7 = new TH1D("tau2_pt_cut7","tau2_pt_cut7",50,0.0,200.0);
+
+  // tau2_eta
+  m_tau2_eta_cut1 = new TH1D("tau2_eta_cut1","tau2_eta_cut1",50,-3.0,3.0);
+  m_tau2_eta_cut2 = new TH1D("tau2_eta_cut2","tau2_eta_cut2",50,-3.0,3.0);
+  m_tau2_eta_cut3 = new TH1D("tau2_eta_cut3","tau2_eta_cut3",50,-3.0,3.0);
+  m_tau2_eta_cut4 = new TH1D("tau2_eta_cut4","tau2_eta_cut4",50,-3.0,3.0);
+  m_tau2_eta_cut5 = new TH1D("tau2_eta_cut5","tau2_eta_cut5",50,-3.0,3.0);
+  m_tau2_eta_cut6 = new TH1D("tau2_eta_cut6","tau2_eta_cut6",50,-3.0,3.0);
+  m_tau2_eta_cut7 = new TH1D("tau2_eta_cut7","tau2_eta_cut7",50,-3.0,3.0);
+
+  // tau2_phi
+  m_tau2_phi_cut1 = new TH1D("tau2_phi_cut1","tau2_phi_cut1",50,-3.142,3.142);
+  m_tau2_phi_cut2 = new TH1D("tau2_phi_cut2","tau2_phi_cut2",50,-3.142,3.142);
+  m_tau2_phi_cut3 = new TH1D("tau2_phi_cut3","tau2_phi_cut3",50,-3.142,3.142);
+  m_tau2_phi_cut4 = new TH1D("tau2_phi_cut4","tau2_phi_cut4",50,-3.142,3.142);
+  m_tau2_phi_cut5 = new TH1D("tau2_phi_cut5","tau2_phi_cut5",50,-3.142,3.142);
+  m_tau2_phi_cut6 = new TH1D("tau2_phi_cut6","tau2_phi_cut6",50,-3.142,3.142);
+  m_tau2_phi_cut7 = new TH1D("tau2_phi_cut7","tau2_phi_cut7",50,-3.142,3.142);
+
+  ////////////////////////////////////////////////
+  //
+  //     Additional variables
+  //
+  /////////////////////////////////////////////////
+
+  // m_mumu
+  m_m_mumu_cut1 = new TH1D("m_mumu_cut1","m_mumu_cut1",1000,0.0,500.0);
+  m_m_mumu_cut2 = new TH1D("m_mumu_cut2","m_mumu_cut2",1000,0.0,500.0);
+  m_m_mumu_cut3 = new TH1D("m_mumu_cut3","m_mumu_cut3",1000,0.0,500.0);
+  m_m_mumu_cut4 = new TH1D("m_mumu_cut4","m_mumu_cut4",1000,0.0,500.0);
+  m_m_mumu_cut5 = new TH1D("m_mumu_cut5","m_mumu_cut5",1000,0.0,500.0);
+  m_m_mumu_cut6 = new TH1D("m_mumu_cut6","m_mumu_cut6",1000,0.0,500.0);
+  m_m_mumu_cut7 = new TH1D("m_mumu_cut7","m_mumu_cut7",1000,0.0,500.0);
+
+  // m_tautau
+  m_m_tautau_cut1 = new TH1D("m_tautau_cut1","m_tautau_cut1",1000,0.0,500.0);
+  m_m_tautau_cut2 = new TH1D("m_tautau_cut2","m_tautau_cut2",1000,0.0,500.0);
+  m_m_tautau_cut3 = new TH1D("m_tautau_cut3","m_tautau_cut3",1000,0.0,500.0);
+  m_m_tautau_cut4 = new TH1D("m_tautau_cut4","m_tautau_cut4",1000,0.0,500.0);
+  m_m_tautau_cut5 = new TH1D("m_tautau_cut5","m_tautau_cut5",1000,0.0,500.0);
+  m_m_tautau_cut6 = new TH1D("m_tautau_cut6","m_tautau_cut6",1000,0.0,500.0);
+  m_m_tautau_cut7 = new TH1D("m_tautau_cut7","m_tautau_cut7",1000,0.0,500.0);
+
+  // m_mutau
+  m_m_mutau_cut2 = new TH1D("m_mutau_cut2","m_mutau_cut2",1000,0.0,500.0);
+  m_m_mutau_cut3 = new TH1D("m_mutau_cut3","m_mutau_cut3",1000,0.0,500.0);
+  m_m_mutau_cut4 = new TH1D("m_mutau_cut4","m_mutau_cut4",1000,0.0,500.0);
+  m_m_mutau_cut5 = new TH1D("m_mutau_cut5","m_mutau_cut5",1000,0.0,500.0);
+  m_m_mutau_cut6 = new TH1D("m_mutau_cut6","m_mutau_cut6",1000,0.0,500.0);
+  m_m_mutau_cut7 = new TH1D("m_mutau_cut7","m_mutau_cut7",1000,0.0,500.0);
+
+  // inv_mass
+  m_inv_mass_cut1 = new TH1D("inv_mass_cut1","inv_mass_cut1",1000,0.0,500.0);
+  m_inv_mass_cut2 = new TH1D("inv_mass_cut2","inv_mass_cut2",1000,0.0,500.0);
+  m_inv_mass_cut3 = new TH1D("inv_mass_cut3","inv_mass_cut3",1000,0.0,500.0);
+  m_inv_mass_cut4 = new TH1D("inv_mass_cut4","inv_mass_cut4",1000,0.0,500.0);
+  m_inv_mass_cut5 = new TH1D("inv_mass_cut5","inv_mass_cut5",1000,0.0,500.0);
+  m_inv_mass_cut6 = new TH1D("inv_mass_cut6","inv_mass_cut6",1000,0.0,500.0);
+  m_inv_mass_cut7 = new TH1D("inv_mass_cut7","inv_mass_cut7",1000,0.0,500.0);
+
+  // dR_recon
+  m_dR_recon_cut1 = new TH1D ("dR_recon_cut1", "dR_recon_cut1", 200, 0, 2.0);
+  m_dR_recon_cut2 = new TH1D ("dR_recon_cut2", "dR_recon_cut2", 200, 0, 2.0);
+  m_dR_recon_cut3 = new TH1D ("dR_recon_cut3", "dR_recon_cut3", 200, 0, 2.0);
+  m_dR_recon_cut4 = new TH1D ("dR_recon_cut4", "dR_recon_cut4", 200, 0, 2.0);
+  m_dR_recon_cut5 = new TH1D ("dR_recon_cut5", "dR_recon_cut5", 200, 0, 2.0);
+  m_dR_recon_cut6 = new TH1D ("dR_recon_cut6", "dR_recon_cut6", 200, 0, 2.0);
+  m_dR_recon_cut7 = new TH1D ("dR_recon_cut7", "dR_recon_cut7", 200, 0, 2.0);
+ 
+  // x_vis1, x_vis2
+  m_x_vis1_cut1 = new TH1D ("x_vis1_cut1", "x_vis1_cut1", 1000, -5.0, 5.0);
+  m_x_vis1_cut2 = new TH1D ("x_vis1_cut2", "x_vis1_cut2", 1000, -5.0, 5.0);
+  m_x_vis1_cut3 = new TH1D ("x_vis1_cut3", "x_vis1_cut3", 1000, -5.0, 5.0);
+  m_x_vis1_cut4 = new TH1D ("x_vis1_cut4", "x_vis1_cut4", 1000, -5.0, 5.0);
+  m_x_vis1_cut5 = new TH1D ("x_vis1_cut5", "x_vis1_cut5", 1000, -5.0, 5.0);
+  m_x_vis1_cut6 = new TH1D ("x_vis1_cut6", "x_vis1_cut6", 1000, -5.0, 5.0);
+  m_x_vis1_cut7 = new TH1D ("x_vis1_cut7", "x_vis1_cut7", 1000, -5.0, 5.0);
+  
+  m_x_vis2_cut1 = new TH1D ("x_vis2_cut1", "x_vis2_cut1", 1000, -5.0, 5.0);
+  m_x_vis2_cut2 = new TH1D ("x_vis2_cut2", "x_vis2_cut2", 1000, -5.0, 5.0);
+  m_x_vis2_cut3 = new TH1D ("x_vis2_cut3", "x_vis2_cut3", 1000, -5.0, 5.0);
+  m_x_vis2_cut4 = new TH1D ("x_vis2_cut4", "x_vis2_cut4", 1000, -5.0, 5.0);
+  m_x_vis2_cut5 = new TH1D ("x_vis2_cut5", "x_vis2_cut5", 1000, -5.0, 5.0);
+  m_x_vis2_cut6 = new TH1D ("x_vis2_cut6", "x_vis2_cut6", 1000, -5.0, 5.0);
+  m_x_vis2_cut7 = new TH1D ("x_vis2_cut7", "x_vis2_cut7", 1000, -5.0, 5.0);
+  
+  // cos_dphi
+  m_cos_dphi_cut1 = new TH1D ("cos_dphi_cut1", "cos_dphi_cut1", 100, -1.0, 1.0);
+  m_cos_dphi_cut2 = new TH1D ("cos_dphi_cut2", "cos_dphi_cut2", 100, -1.0, 1.0);
+  m_cos_dphi_cut3 = new TH1D ("cos_dphi_cut3", "cos_dphi_cut3", 100, -1.0, 1.0);
+  m_cos_dphi_cut4 = new TH1D ("cos_dphi_cut4", "cos_dphi_cut4", 100, -1.0, 1.0);
+  m_cos_dphi_cut5 = new TH1D ("cos_dphi_cut5", "cos_dphi_cut5", 100, -1.0, 1.0);
+  m_cos_dphi_cut6 = new TH1D ("cos_dphi_cut6", "cos_dphi_cut6", 100, -1.0, 1.0);
+  m_cos_dphi_cut7 = new TH1D ("cos_dphi_cut7", "cos_dphi_cut7", 100, -1.0, 1.0);
+  
+  // m_vis1vis2
+  m_m_vis1vis2_recon_cut1 = new TH1D ("m_vis1vis2_recon_cut1", "m_m_vis1vis2_recon_cut1", 500, 0, 500);
+  m_m_vis1vis2_recon_cut2 = new TH1D ("m_vis1vis2_recon_cut2", "m_m_vis1vis2_recon_cut2", 500, 0, 500);
+  m_m_vis1vis2_recon_cut3 = new TH1D ("m_vis1vis2_recon_cut3", "m_m_vis1vis2_recon_cut3", 500, 0, 500);
+  m_m_vis1vis2_recon_cut4 = new TH1D ("m_vis1vis2_recon_cut4", "m_m_vis1vis2_recon_cut4", 500, 0, 500);
+  m_m_vis1vis2_recon_cut5 = new TH1D ("m_vis1vis2_recon_cut5", "m_m_vis1vis2_recon_cut5", 500, 0, 500);
+  m_m_vis1vis2_recon_cut6 = new TH1D ("m_vis1vis2_recon_cut6", "m_m_vis1vis2_recon_cut6", 500, 0, 500);
+  m_m_vis1vis2_recon_cut7 = new TH1D ("m_vis1vis2_recon_cut7", "m_m_vis1vis2_recon_cut7", 500, 0, 500);
+
+  m_truth_higgs_pt = new TH1D("truth_higgs_pt","truth_higgs_pt",200,0,200);
+  m_truth_higgs_eta = new TH1D("truth_higgs_eta","truth_higgs_eta",100,-10,10);
+  m_truth_higgs_phi = new TH1D("truth_higgs_phi","truth_higgs_phi",100,-3.142,3.142);
+
+  m_truth_cpodd_pt = new TH1D("truth_cpodd_pt","truth_cpodd_pt",200,0,200);
+  m_truth_cpodd_eta = new TH1D("truth_cpodd_eta","truth_cpodd_eta",100,-10,10);
+  m_truth_cpodd_phi = new TH1D("truth_cpodd_phi","truth_cpodd_phi",100,-3.142,3.142);
+
+  m_truth_m_2mu2tau_collinear = new TH1D ("truth_m_2mu2tau_collinear", "truth_m_2mu2tau_collinear", 100, 0, 250);
+  m_truth_m_2mu2tau_collinear_ratio = new TH1D ("truth_m_2mu2tau_collinear_ratio", "truth_m_2mu2tau_collinear_ratio", 100, 0, 10);
+  m_truth_m_2mu2tau = new TH1D ("truth_m_2mu2tau", "truth_m_2mu2tau", 100, 0, 150);
+  m_truth_m_2mu2tau_ratio = new TH1D ("truth_m_2mu2tau_ratio", "truth_m_2mu2tau_ratio", 100, 0, 10);
+  
+  m_truth_m_mutau = new TH1D ("truth_m_mutau", "truth_m_mutau", 100, 0, 20);
+  m_truth_m_mutau_ratio = new TH1D ("truth_m_mutau_ratio", "truth_m_mutau_ratio", 100, 0, 10);
+  m_truth_m_mumu = new TH1D ("truth_m_mumu", "truth_m_mumu", 100, 0, 100);
+  m_truth_m_tautau = new TH1D ("truth_m_tautau", "truth_m_tautau", 100, 0, 100);
+
+  m_truth_dR_amu = new TH1D ("truth_dR_amu", "truth_dR_amu", 100, 0, 0.5);
+  m_truth_dR_atau = new TH1D ("truth_dR_atau", "truth_dR_atau", 100, 0, 0.5);
+  m_truth_dR_anu = new TH1D ("truth_dR_anu", "truth_dR_anu", 100, 0, 0.5);
+
+  m_truth_dphi_amu = new TH1D ("truth_dphi_amu", "truth_dphi_amu", 100, 0, 0.5);
+  m_truth_dphi_atau = new TH1D ("truth_dphi_atau", "truth_dphi_atau", 100, 0, 0.5);
+  m_truth_dphi_anu = new TH1D ("truth_dphi_anu", "truth_dphi_anu", 100, 0, 0.5);
+
+  m_truth_dR_mutau_same = new TH1D ("truth_dR_mutau_same", "truth_dR_mutau_same", 100, 0, 10.0);
+  m_truth_dR_mutau_diff = new TH1D ("truth_dR_mutau_diff", "truth_dR_mutau_diff", 100, 0, 10.0);
+  m_truth_dR_mumu = new TH1D ("truth_dR_mumu", "truth_dR_mumu", 100, 0, 10.0);
+  m_truth_dR_tautau = new TH1D ("truth_dR_tautau", "truth_dR_tautau", 100, 0, 10.0);
+
+  m_truth_muon_pt = new TH1D("truth_muon_pt","truth_muon_pt",100,0.0,200.0);
+  m_truth_muon_eta = new TH1D("truth_muon_eta","truth_muon_eta",100,-3.0,3.0);
+  m_truth_muon_phi = new TH1D("truth_muon_phi","truth_muon_phi",100,-3.142,3.142);
+
+  m_truth_taujet_pt = new TH1D("truth_taujet_pt","truth_taujet_pt",100,0.0,200.0);
+  m_truth_taujet_eta = new TH1D("truth_taujet_eta","truth_taujet_eta",100,-3.0,3.0);
+  m_truth_taujet_phi = new TH1D("truth_taujet_phi","truth_taujet_phi",100,-3.142,3.142);
+
+  m_truth_MET = new TH1D("truth_MET","truth_MET",100,0,200);
+  m_truth_x_vis1 = new TH1D ("truth_x_vis1", "truth_x_vis1", 100, -2.0, 3.0);
+  m_truth_x_vis2 = new TH1D ("truth_x_vis2", "truth_x_vis2", 100, -2.0, 3.0);
+
+  m_muon_pt_ratio = new TH1D("muon_pt_ratio","muon_pt_ratio",400,-2.0,2.0);
+  m_muon_phi_ratio = new TH1D("muon_phi_ratio","muon_phi_ratio",400,-2.0,2.0);
+  m_muon_eta_ratio = new TH1D("muon_eta_ratio","muon_eta_ratio",400,-2.0,2.0);
+
+  m_taujet_pt_ratio = new TH1D("taujet_pt_ratio","taujet_pt_ratio",400,-2.0,2.0);
+  m_taujet_phi_ratio = new TH1D("taujet_phi_ratio","taujet_phi_ratio",400,-2.0,2.0);
+  m_taujet_eta_ratio = new TH1D("taujet_eta_ratio","taujet_eta_ratio",400,-2.0,2.0);
+ 
+  m_muon_pt_ratio_withID = new TH1D("muon_pt_ratio_withID","muon_pt_ratio_withID",400,-2.0,2.0);
+  m_muon_phi_ratio_withID = new TH1D("muon_phi_ratio_withID","muon_phi_ratio_withID",400,-2.0,2.0);
+  m_muon_eta_ratio_withID = new TH1D("muon_eta_ratio_withID","muon_eta_ratio_withID",400,-2.0,2.0);
+
+  m_taujet_pt_ratio_withID = new TH1D("taujet_pt_ratio_withID","taujet_pt_ratio_withID",400,-2.0,2.0);
+  m_taujet_phi_ratio_withID = new TH1D("taujet_phi_ratio_withID","taujet_phi_ratio_withID",400,-2.0,2.0);
+  m_taujet_eta_ratio_withID = new TH1D("taujet_eta_ratio_withID","taujet_eta_ratio_withID",400,-2.0,2.0);
+ 
+  m_truth_cos_dphi = new TH1D("truth_cos_dphi","truth_cos_dphi",200,-1,1);
+
+  m_truth_mu1pt_mu2pt   = new TH2D("truth_mu1pt_mu2pt","truth_mu1pt_mu2pt",100,0,200,100,0,200); 
+  m_truth_tau1pt_tau2pt = new TH2D("truth_tau1pt_tau2pt","truth_tau1pt_tau2pt",100,0,200,100,0,200); 
+ 
+  for (int i = 0; i < 150; i++) {all[i] = 0;}
+  for (int i = 0; i < 150; i++) {GRL[i] = 0;}
+  for (int i = 0; i < 150; i++) {evc[i] = 0;}
+  for (int i = 0; i < 150; i++) {basic_cut[i] = 0;}
+  for (int i = 0; i < 150; i++) {basic_cut_trig[i] = 0;}
+  for (int i = 0; i < 150; i++) {category1[i] = 0;}
+  for (int i = 0; i < 150; i++) {category1_trig[i] = 0;}
+  for (int i = 0; i < 150; i++) {category2[i] = 0;}
+
+  n_OSOS=0;
+  n_OSSS=0;
+  n_SSOS=0;
+  n_SSSS=0;
+
+  n_pppp=0; //1
+  n_pppn=0;
+  n_ppnp=0;
+  n_ppnn=0;
+  n_pnpp=0; //5
+  n_pnpn=0;
+  n_pnnp=0;
+  n_pnnn=0;
+  n_nppp=0; //9
+  n_nppn=0;
+  n_npnp=0;
+  n_npnn=0;
+  n_nnpp=0; //13
+  n_nnpn=0;
+  n_nnnp=0;
+  n_nnnn=0;
+
+
+  n_truth_muons = 0;
+  n_truth_nu1s = 0;
+  n_truth_nu2s = 0;
+  n_truth_nu3s = 0;
+  n_truth_nu4s = 0;
+  n_truth_taujets = 0;
+  n_good_electrons = 0;
+  n_good_muons = 0;
+  n_good_taujets = 0;
+  n_good_jets = 0;
+
+  // vector
+  truth_muons = new vector < Particle * >;
+  truth_taujets = new vector < Particle * >;
+  truth_nu1s = new vector < Particle * >;
+  truth_nu2s = new vector < Particle * >;
+  truth_nu3s = new vector < Particle * >;
+  truth_nu4s = new vector < Particle * >;
+  good_electrons = new vector < Particle * >;
+  good_muons = new vector < Particle * >;
+  good_taujets = new vector < Particle * >;
+  good_jets = new vector < Particle * >;
+
+}
+
+void
+MyAna::execute ()
+{
+ // Weight=1;
+ // Trig_EF_2mu6=1;
+  cout << "#############################################################################################"  << endl;
+  cout<<"**** This Analysis : event no. : "<<GRL[0]<< " is being analyzed"<<endl;
+  cout<<"**** ATLAS : Run no. : "<<RunNumber<<", Event no. : "<<EventNumber <<", Weight : "<<Weight<<endl;
+ 
+ /** Compare with truth values here*/
+
+  double t1_px = 0;
+  double t1_py = 0;
+  double t1_pz = 0;
+  double t1_e = 0;
+  double t2_px = 0;
+  double t2_py = 0;
+  double t2_pz = 0;
+  double t2_e = 0;
+  double t3_px = 0;
+  double t3_py = 0;
+  double t3_pz = 0;
+  double t3_e = 0;
+  double t4_px = 0;
+  double t4_py = 0;
+  double t4_pz = 0;
+  double t4_e = 0;
+  double met1_px = 0;
+  double met1_py = 0;
+  double met2_px = 0;
+  double met2_py = 0;
+  double met3_px = 0;
+  double met3_py = 0;
+  double met4_px = 0;
+  double met4_py = 0;
+  
+  int Ntaujet =0;
+  int Nmuon =0;
+  int Nelectron =0;
+  
+
+  cout <<"**** Truth information ****"<<endl;
+
+  for (unsigned int i = 0; i < NTruHiggs; i++){
+   m_truth_higgs_pt->Fill((*TruHiggsPt)[i]);
+   m_truth_higgs_eta->Fill((*TruHiggsEta)[i]);
+   m_truth_higgs_phi->Fill((*TruHiggsPhi)[i]);
+  }
+
+  for (unsigned int i = 0; i < NTruCPodd; i++){
+   m_truth_cpodd_pt->Fill((*TruCPoddPt)[i]);
+   m_truth_cpodd_eta->Fill((*TruCPoddEta)[i]);
+   m_truth_cpodd_phi->Fill((*TruCPoddPhi)[i]);
+  }
+
+
+  for (unsigned int i = 0; i < NTruTauChild; i++)
+    { 
+      int id = abs ((*TruTauChildPdgId)[i]);
+
+    double pt = pow(pow((*TruTauChildPx)[i],2)+pow((*TruTauChildPy)[i],2),0.5);
+      if ((*TruTauChildTauNumber)[i] == 1)
+        {
+           if (id == 11 || id == 13 || id == 24 || id == 213 || id == 321
+              || id == 323 || id == 20213 || id == 211)
+            {
+              t1_px = (*TruTauChildPx)[i];
+              t1_py = (*TruTauChildPy)[i];
+              t1_pz = (*TruTauChildPz)[i];
+              t1_e = (*TruTauChildEnergy)[i];
+            }
+          if (id == 12 || id == 14 || id == 16)
+            {
+              met1_px += (*TruTauChildPx)[i];
+              met1_py += (*TruTauChildPy)[i];
+              Particle *t = new Particle((*TruTauChildPx)[i],(*TruTauChildPy)[i],(*TruTauChildPz)[i],(*TruTauChildEnergy)[i],(*TruTauChildPdgId)[i]);
+              truth_nu1s->push_back(t);
+            }
+      if(id==11){ cout<<"Tau1->Electron pdgid : "<<id<<", pt : "<<pt<<endl; ++Nelectron;}
+      if(id==13){ cout<<"Tau1->Muon pdgid : "<<id<<", pt : "<<pt<<endl; ++Nmuon;
+                  Particle *t = new Particle((*TruTauChildPx)[i],(*TruTauChildPy)[i],(*TruTauChildPz)[i],(*TruTauChildEnergy)[i],(*TruTauChildPdgId)[i]);
+                  truth_muons->push_back(t);}
+      if(id == 24 || id == 213 || id == 321|| id == 323 || id == 20213 || id == 211){ cout<<"Tau1->Taujet pdgid : "<<id<<", pt : "<<pt<<endl; ++Ntaujet;
+                  Particle *t = new Particle((*TruTauChildPx)[i],(*TruTauChildPy)[i],(*TruTauChildPz)[i],(*TruTauChildEnergy)[i],(*TruTauChildPdgId)[i]);
+                  truth_taujets->push_back(t);}
+        }
+
+       if ((*TruTauChildTauNumber)[i] == 2)
+        {
+          if (id == 11 || id == 13 || id == 24 || id == 213 || id == 321
+              || id == 323 || id == 20213 || id == 211)
+            {
+              t2_px = (*TruTauChildPx)[i];
+              t2_py = (*TruTauChildPy)[i];
+              t2_pz = (*TruTauChildPz)[i];
+              t2_e = (*TruTauChildEnergy)[i];
+            }
+          if (id == 12 || id == 14 || id == 16)
+            {
+              met2_px += (*TruTauChildPx)[i];
+              met2_py += (*TruTauChildPy)[i];
+              Particle *t = new Particle((*TruTauChildPx)[i],(*TruTauChildPy)[i],(*TruTauChildPz)[i],(*TruTauChildEnergy)[i],(*TruTauChildPdgId)[i]);
+              truth_nu2s->push_back(t);
+            }
+      if(id==11){ cout<<"Tau2->Electron pdgid : "<<id<<", pt : "<<pt<<endl; ++Nelectron;}
+      if(id==13){ cout<<"Tau2->Muon pdgid : "<<id<<", pt : "<<pt<<endl; ++Nmuon;
+                  Particle *t = new Particle((*TruTauChildPx)[i],(*TruTauChildPy)[i],(*TruTauChildPz)[i],(*TruTauChildEnergy)[i],(*TruTauChildPdgId)[i]);
+                  truth_muons->push_back(t);}
+      if(id == 24 || id == 213 || id == 321|| id == 323 || id == 20213 || id == 211){ cout<<"Tau2->Taujet pdgid : "<<id<<", pt : "<<pt<<endl; ++Ntaujet;
+                  Particle *t = new Particle((*TruTauChildPx)[i],(*TruTauChildPy)[i],(*TruTauChildPz)[i],(*TruTauChildEnergy)[i],(*TruTauChildPdgId)[i]);
+                  truth_taujets->push_back(t);}
+        }
+
+       if ((*TruTauChildTauNumber)[i] == 3)
+        {
+          if (id == 11 || id == 13 || id == 24 || id == 213 || id == 321
+              || id == 323 || id == 20213 || id == 211)
+            {
+              t3_px = (*TruTauChildPx)[i];
+              t3_py = (*TruTauChildPy)[i];
+              t3_pz = (*TruTauChildPz)[i];
+              t3_e = (*TruTauChildEnergy)[i];
+            }
+          if (id == 12 || id == 14 || id == 16)
+            {
+              met3_px += (*TruTauChildPx)[i];
+              met3_py += (*TruTauChildPy)[i];
+              Particle *t = new Particle((*TruTauChildPx)[i],(*TruTauChildPy)[i],(*TruTauChildPz)[i],(*TruTauChildEnergy)[i],(*TruTauChildPdgId)[i]);
+              truth_nu3s->push_back(t);
+            }
+      if(id==11){ cout<<"Tau3->Electron pdgid : "<<id<<", pt : "<<pt<<endl; ++Nelectron;}
+      if(id==13){ cout<<"Tau3->Muon pdgid : "<<id<<", pt : "<<pt<<endl; ++Nmuon;
+                  Particle *t = new Particle((*TruTauChildPx)[i],(*TruTauChildPy)[i],(*TruTauChildPz)[i],(*TruTauChildEnergy)[i],(*TruTauChildPdgId)[i]);
+                  truth_muons->push_back(t);}
+      if(id == 24 || id == 213 || id == 321|| id == 323 || id == 20213 || id == 211){ cout<<"Tau3->Taujet pdgid : "<<id<<", pt : "<<pt<<endl; ++Ntaujet;
+                  Particle *t = new Particle((*TruTauChildPx)[i],(*TruTauChildPy)[i],(*TruTauChildPz)[i],(*TruTauChildEnergy)[i],(*TruTauChildPdgId)[i]);
+                  truth_taujets->push_back(t);}
+        }
+  if ((*TruTauChildTauNumber)[i] == 4)
+        {
+          if (id == 11 || id == 13 || id == 24 || id == 213 || id == 321
+              || id == 323 || id == 20213 || id == 211)
+            {
+              t4_px = (*TruTauChildPx)[i];
+              t4_py = (*TruTauChildPy)[i];
+              t4_pz = (*TruTauChildPz)[i];
+              t4_e = (*TruTauChildEnergy)[i];
+            }
+          if (id == 12 || id == 14 || id == 16)
+            {
+              met4_px += (*TruTauChildPx)[i];
+              met4_py += (*TruTauChildPy)[i];
+              Particle *t = new Particle((*TruTauChildPx)[i],(*TruTauChildPy)[i],(*TruTauChildPz)[i],(*TruTauChildEnergy)[i],(*TruTauChildPdgId)[i]);
+              truth_nu4s->push_back(t);
+            }
+      if(id==11){ cout<<"Tau4->Electron pdgid : "<<id<<", pt : "<<pt<<endl; ++Nelectron;}
+      if(id==13){ cout<<"Tau4->Muon pdgid : "<<id<<", pt : "<<pt<<endl; ++Nmuon;
+                  Particle *t = new Particle((*TruTauChildPx)[i],(*TruTauChildPy)[i],(*TruTauChildPz)[i],(*TruTauChildEnergy)[i],(*TruTauChildPdgId)[i]);
+                  truth_muons->push_back(t);}
+      if(id == 24 || id == 213 || id == 321|| id == 323 || id == 20213 || id == 211){ cout<<"Tau4->Taujet pdgid : "<<id<<", pt : "<<pt<<endl; ++Ntaujet;
+                  Particle *t = new Particle((*TruTauChildPx)[i],(*TruTauChildPy)[i],(*TruTauChildPz)[i],(*TruTauChildEnergy)[i],(*TruTauChildPdgId)[i]);
+                  truth_taujets->push_back(t);}
+        }
+    }
+    
+  cout<<"Nmuon      :"<<Nmuon<<              ", Ntaujet      :" <<Ntaujet<<endl;
+  cout<<"truth muon :"<<truth_muons->size()<<", truth taujet :"<<truth_taujets->size()<<endl;
+
+  
+
+
+  cout <<"-------------------------------------------------------------"<<endl;
+ 
+ if(Ntaujet==2&&Nmuon==0&&NElectron==0){
+  cout<<"## This is a good generated event"<<endl; 
+  double dR4 = (*truth_taujets)[0]->DeltaR (*(*truth_taujets)[1]);
+  m_truth_dR_tautau->Fill(dR4);
+
+  m_truth_taujet_pt->Fill((*truth_taujets)[0]->Pt());
+  m_truth_taujet_pt->Fill((*truth_taujets)[1]->Pt());
+  m_truth_taujet_eta->Fill((*truth_taujets)[0]->Eta());
+  m_truth_taujet_eta->Fill((*truth_taujets)[1]->Eta());
+  m_truth_taujet_phi->Fill((*truth_taujets)[0]->Phi());
+  m_truth_taujet_phi->Fill((*truth_taujets)[1]->Phi());
+  double met_x = met1_px + met2_px + met3_px + met4_px;
+  double met_y = met1_py + met2_py + met3_py + met4_py;
+  double met = pow(met_x*met_x+met_y*met_y,0.5);
+  m_truth_MET->Fill(met);
+  
+ // *******************************************************
+ // Resolution test i.e. ( truth_pt - recon_pt ) / truth_pt
+ // *******************************************************
+
+  for(unsigned int i=0;i<truth_taujets->size();i++){
+    for (unsigned int j = 0; j < NTaujet; j++){
+      double deta = fabs ((*TaujetEta)[j] - (*truth_taujets)[i]->Eta ());
+      double dphi = fabs ((*TaujetPhi)[j] - (*truth_taujets)[i]->Phi ());
+      if(dphi>M_PI) dphi = 2*M_PI - dphi;
+      double dR = sqrt(deta*deta + dphi*dphi); 
+          if(dR<0.1){
+          double pt_ratio = ((*truth_taujets)[i]->Pt()-(*TaujetPt)[j])/(*truth_taujets)[i]->Pt();    
+          double phi_ratio = ((*truth_taujets)[i]->Phi()-(*TaujetPhi)[j])/(*truth_taujets)[i]->Phi();    
+          double eta_ratio = ((*truth_taujets)[i]->Eta()-(*TaujetEta)[j])/(*truth_taujets)[i]->Eta();    
+          m_taujet_pt_ratio->Fill(pt_ratio); 
+          m_taujet_phi_ratio->Fill(phi_ratio); 
+          m_taujet_eta_ratio->Fill(eta_ratio); 
+      
+            if((*TaujetPt)[j]<=10.0){continue;}  
+            if(fabs((*TaujetEta)[j])>=2.5){continue;}  
+            if((*TaujetAuthor)[j]!=1 &&(*TaujetAuthor)[i]!=3){continue;}  
+            if((*TaujetNTrack)[j] != 1 && (*TaujetNTrack)[i] != 3){continue;}
+            if(fabs((*TaujetCharge)[j])!=1){continue;}  
+            if((*TaujetElectronVeto)[j]!=0){continue;}
+            
+            // tauID - SimpleMediumTauID
+            if((*TaujetNTrack)[j]==1){
+            if((*TaujetEMRadius)[j]>0.07){continue;}
+            if((*TaujetTrkAvgDist)[j]>0.08){continue;}
+            if((*TaujetEtOverPtLeadTrack)[j]>8.33){continue;}
+            }
+ 
+            if((*TaujetNTrack)[j]>1){
+            if((*TaujetEMRadius)[j]>0.12){continue;}
+            if((*TaujetTrkAvgDist)[j]>0.08){continue;}
+            if((*TaujetEtOverPtLeadTrack)[j]>4.167){continue;}
+            }
+
+            m_taujet_pt_ratio_withID->Fill(pt_ratio); 
+            m_taujet_phi_ratio_withID->Fill(phi_ratio); 
+            m_taujet_eta_ratio_withID->Fill(eta_ratio); 
+         
+        }
+     }  
+  }   
+
+  cout <<"-------------------------------------------------------------"<<endl;
+  }
+
+
+
+
+ if(Ntaujet==2&&Nmuon==2){
+
+/*   if((*truth_muons)[0]->Pt()<8){return;}
+   if((*truth_muons)[1]->Pt()<8){return;}
+   if((*truth_taujets)[0]->Pt()<8){return;}
+   if((*truth_taujets)[1]->Pt()<8){return;}
+*/
+   cout<<"## This is a good generated event"<<endl; 
+
+  if(NTruCPodd!=0){
+ 
+     for(int i=0;i<2;i++){ 
+     
+     Particle *t = new Particle((*TruCPoddPx)[i],(*TruCPoddPy)[i],(*TruCPoddPz)[i],(*TruCPoddEnergy)[i],(*TruCPoddPdgId)[i]);
+     double dr1 = t->DeltaR(*(*truth_muons)[i]);
+     double dr2 = t->DeltaR(*(*truth_taujets)[i]);
+     double dphi1 = t->DeltaPhi(*(*truth_muons)[i]);
+     double dphi2 = t->DeltaPhi(*(*truth_taujets)[i]);
+     //int pdgid1 = (*truth_muons)[i]->PdgId();
+     //int pdgid2 = (*truth_taujets)[i]->PdgId();
+   
+    // cout<<"dR(CPodd1,truth_muon1)   : "<<dr1<<", PdgId : "<<pdgid1<<endl; 
+    // cout<<"dR(CPodd1,truth_taujet1) : "<<dr2<<", PdgId : "<<pdgid2<<endl; 
+     m_truth_dR_amu->Fill(dr1);   
+     m_truth_dR_atau->Fill(dr2);   
+     m_truth_dphi_amu->Fill(dphi1);   
+     m_truth_dphi_atau->Fill(dphi2);   
+ 
+     if(i==0){ 
+    
+       for(unsigned int j=0;j<truth_nu1s->size();j++){
+      // cout<<"dR(CPodd,truth_nu1)    : "<<dr<<endl; 
+       double dr = t->DeltaR(*(*truth_nu1s)[j]);
+       double dphi = t->DeltaPhi(*(*truth_nu1s)[j]);
+       m_truth_dphi_anu->Fill(dphi);   
+       m_truth_dR_anu->Fill(dr);   
+       }
+
+       for(unsigned int j=0;j<truth_nu2s->size();j++){
+       double dr = t->DeltaR(*(*truth_nu2s)[j]);
+       double dphi = t->DeltaPhi(*(*truth_nu2s)[j]);
+       m_truth_dphi_anu->Fill(dphi);   
+       m_truth_dR_anu->Fill(dr);   
+       }
+     }
+     
+     if(i==1){
+
+       for(unsigned int j=0;j<truth_nu3s->size();j++){
+       double dr = t->DeltaR(*(*truth_nu3s)[j]);
+       double dphi = t->DeltaPhi(*(*truth_nu3s)[j]);
+       m_truth_dphi_anu->Fill(dphi);   
+       m_truth_dR_anu->Fill(dr);   
+       }
+  
+       for(unsigned int j=0;j<truth_nu4s->size();j++){
+       double dr = t->DeltaR(*(*truth_nu4s)[j]);
+       double dphi = t->DeltaPhi(*(*truth_nu4s)[j]);
+       m_truth_dphi_anu->Fill(dphi);   
+       m_truth_dR_anu->Fill(dr);   
+       }
+     }
+
+     delete t;
+     }
+  } 
+
+  double dR1 = (*truth_muons)[0]->DeltaR (*(*truth_taujets)[0]);
+  double dR2 = (*truth_muons)[1]->DeltaR (*(*truth_taujets)[1]);
+  double dR3 = (*truth_muons)[0]->DeltaR (*(*truth_muons)[1]);
+  double dR4 = (*truth_taujets)[0]->DeltaR (*(*truth_taujets)[1]);
+  double dR5 = (*truth_muons)[0]->DeltaR (*(*truth_taujets)[1]);
+  double dR6 = (*truth_muons)[1]->DeltaR (*(*truth_taujets)[0]);
+  cout<<"dR1 : "<<dR1<<endl;
+  cout<<"dR2 : "<<dR2<<endl;
+  cout<<"dR5 : "<<dR5<<endl;
+  cout<<"dR6 : "<<dR6<<endl;
+  m_truth_dR_mutau_same->Fill(dR1);
+  m_truth_dR_mutau_same->Fill(dR2);
+  m_truth_dR_mumu->Fill(dR3);
+  m_truth_dR_tautau->Fill(dR4);
+  m_truth_dR_mutau_diff->Fill(dR5);
+  m_truth_dR_mutau_diff->Fill(dR6);
+ 
+  m_truth_mu1pt_mu2pt->Fill((*truth_muons)[0]->Pt(),(*truth_muons)[1]->Pt());
+  m_truth_tau1pt_tau2pt->Fill((*truth_taujets)[0]->Pt(),(*truth_taujets)[1]->Pt());
+ 
+  double px=(*truth_taujets)[0]->Px()+(*truth_taujets)[1]->Px();
+  double py=(*truth_taujets)[0]->Py()+(*truth_taujets)[1]->Py();
+  double pz=(*truth_taujets)[0]->Pz()+(*truth_taujets)[1]->Pz();
+  double e=(*truth_taujets)[0]->E()+(*truth_taujets)[1]->E();
+  double m=pow(e*e-px*px-py*py-pz*pz,0.5);
+  m_truth_m_tautau->Fill(m);
+
+  px=(*truth_muons)[0]->Px()+(*truth_muons)[1]->Px();
+  py=(*truth_muons)[0]->Py()+(*truth_muons)[1]->Py();
+  pz=(*truth_muons)[0]->Pz()+(*truth_muons)[1]->Pz();
+  e=(*truth_muons)[0]->E()+(*truth_muons)[1]->E();
+  m=pow(e*e-px*px-py*py-pz*pz,0.5);
+  m_truth_m_mumu->Fill(m);
+
+  px=(*truth_muons)[0]->Px()+(*truth_taujets)[0]->Px();
+  py=(*truth_muons)[0]->Py()+(*truth_taujets)[0]->Py();
+  pz=(*truth_muons)[0]->Pz()+(*truth_taujets)[0]->Pz();
+  e=(*truth_muons)[0]->E()+(*truth_taujets)[0]->E();
+  m=pow(e*e-px*px-py*py-pz*pz,0.5);
+  m_truth_m_mutau->Fill(m);
+ 
+  double PX=(*TruTauPx)[0]+(*TruTauPx)[1];   
+  double PY=(*TruTauPy)[0]+(*TruTauPy)[1];   
+  double PZ=(*TruTauPz)[0]+(*TruTauPz)[1];   
+  double E=(*TruTauEnergy)[0]+(*TruTauEnergy)[1];   
+  double M=pow(E*E-PX*PX-PY*PY-PZ*PZ,0.5);
+ 
+  m_truth_m_mutau_ratio->Fill(M/m);
+
+  px=(*truth_muons)[1]->Px()+(*truth_taujets)[1]->Px();
+  py=(*truth_muons)[1]->Py()+(*truth_taujets)[1]->Py();
+  pz=(*truth_muons)[1]->Pz()+(*truth_taujets)[1]->Pz();
+  e=(*truth_muons)[1]->E()+(*truth_taujets)[1]->E();
+  m=pow(e*e-px*px-py*py-pz*pz,0.5);
+  m_truth_m_mutau->Fill(m);
+  
+  PX=(*TruTauPx)[2]+(*TruTauPx)[3];   
+  PY=(*TruTauPy)[2]+(*TruTauPy)[3];   
+  PZ=(*TruTauPz)[2]+(*TruTauPz)[3];   
+  E=(*TruTauEnergy)[2]+(*TruTauEnergy)[3];   
+  M=pow(E*E-PX*PX-PY*PY-PZ*PZ,0.5);
+  m_truth_m_mutau_ratio->Fill(M/m);
+ 
+  m_truth_muon_pt->Fill((*truth_muons)[0]->Pt());
+  m_truth_muon_pt->Fill((*truth_muons)[1]->Pt());
+  m_truth_muon_eta->Fill((*truth_muons)[0]->Eta());
+  m_truth_muon_eta->Fill((*truth_muons)[1]->Eta());
+  m_truth_muon_phi->Fill((*truth_muons)[0]->Phi());
+  m_truth_muon_phi->Fill((*truth_muons)[1]->Phi());
+  m_truth_taujet_pt->Fill((*truth_taujets)[0]->Pt());
+  m_truth_taujet_pt->Fill((*truth_taujets)[1]->Pt());
+  m_truth_taujet_eta->Fill((*truth_taujets)[0]->Eta());
+  m_truth_taujet_eta->Fill((*truth_taujets)[1]->Eta());
+  m_truth_taujet_phi->Fill((*truth_taujets)[0]->Phi());
+  m_truth_taujet_phi->Fill((*truth_taujets)[1]->Phi());
+  double met_x = met1_px + met2_px + met3_px + met4_px;
+  double met_y = met1_py + met2_py + met3_py + met4_py;
+  double met = pow(met_x*met_x+met_y*met_y,0.5);
+  m_truth_MET->Fill(met);
+  
+ // *******************************************************
+ // Resolution test i.e. ( truth_pt - recon_pt ) / truth_pt
+ // *******************************************************
+
+  for(unsigned int i=0;i<truth_muons->size();i++){
+    for (unsigned int j = 0; j < NStaco; j++){
+      double deta = fabs ((*StacoEta)[j] - (*truth_muons)[i]->Eta ());
+      double dphi = fabs ((*StacoPhi)[j] - (*truth_muons)[i]->Phi ());
+      if(dphi>M_PI) dphi = 2*M_PI - dphi;
+      double dR = sqrt(deta*deta + dphi*dphi); 
+          if(dR<0.1){
+          double pt_ratio = ((*truth_muons)[i]->Pt()-(*StacoPt)[j])/(*truth_muons)[i]->Pt();    
+          double phi_ratio = ((*truth_muons)[i]->Phi()-(*StacoPhi)[j])/(*truth_muons)[i]->Phi();    
+          double eta_ratio = ((*truth_muons)[i]->Eta()-(*StacoEta)[j])/(*truth_muons)[i]->Eta();    
+          m_muon_pt_ratio->Fill(pt_ratio); 
+          m_muon_phi_ratio->Fill(phi_ratio); 
+          m_muon_eta_ratio->Fill(eta_ratio); 
+            
+            if((*StacoPt)[j]<=8.0){continue;}  
+            if(fabs((*StacoEta)[j])>=2.4){continue;}  
+            if((*StacoIsCombinedMuon)[j]!=1){continue;}
+            if(fabs((*StacoEPTrkPt)[j]-(*StacoInDetTrkPt)[j])>0.5*(*StacoInDetTrkPt)[j]){continue;}  
+          
+            m_muon_pt_ratio_withID->Fill(pt_ratio); 
+            m_muon_phi_ratio_withID->Fill(phi_ratio); 
+            m_muon_eta_ratio_withID->Fill(eta_ratio); 
+        
+         }
+      }  
+  }   
+
+  for(unsigned int i=0;i<truth_taujets->size();i++){
+    for (unsigned int j = 0; j < NTaujet; j++){
+      double deta = fabs ((*TaujetEta)[j] - (*truth_taujets)[i]->Eta ());
+      double dphi = fabs ((*TaujetPhi)[j] - (*truth_taujets)[i]->Phi ());
+      if(dphi>M_PI) dphi = 2*M_PI - dphi;
+      double dR = sqrt(deta*deta + dphi*dphi); 
+          if(dR<0.1){
+          double pt_ratio = ((*truth_taujets)[i]->Pt()-(*TaujetPt)[j])/(*truth_taujets)[i]->Pt();    
+          double phi_ratio = ((*truth_taujets)[i]->Phi()-(*TaujetPhi)[j])/(*truth_taujets)[i]->Phi();    
+          double eta_ratio = ((*truth_taujets)[i]->Eta()-(*TaujetEta)[j])/(*truth_taujets)[i]->Eta();    
+          m_taujet_pt_ratio->Fill(pt_ratio); 
+          m_taujet_phi_ratio->Fill(phi_ratio); 
+          m_taujet_eta_ratio->Fill(eta_ratio); 
+
+            if((*TaujetPt)[j]<=10.0){continue;}  
+            if(fabs((*TaujetEta)[j])>=2.5){continue;}  
+            if((*TaujetAuthor)[j]!=1 &&(*TaujetAuthor)[j]!=3){continue;}  
+            if((*TaujetNTrack)[j] != 1 && (*TaujetNTrack)[j] != 3){continue;}
+            if(fabs((*TaujetCharge)[j])!=1){continue;}  
+            if((*TaujetElectronVeto)[j]!=0){continue;}
+            // tauID - SimpleMediumTauID
+            if((*TaujetNTrack)[j]==1){
+            if((*TaujetEMRadius)[j]>0.07 || (*TaujetTrkAvgDist)[j]>0.08 || (*TaujetEtOverPtLeadTrack)[j]>8.33) {continue;}
+            }
+ 
+            if((*TaujetNTrack)[j]>1){
+            if((*TaujetEMRadius)[j]>0.12 || (*TaujetTrkAvgDist)[j]>0.08 || (*TaujetEtOverPtLeadTrack)[j]>4.167) {continue;}
+            }
+
+            m_taujet_pt_ratio_withID->Fill(pt_ratio); 
+            m_taujet_phi_ratio_withID->Fill(phi_ratio); 
+            m_taujet_eta_ratio_withID->Fill(eta_ratio); 
+         
+          }
+      }  
+  }   
+
+  double a1_px = t1_px + t2_px;
+  double a1_py = t1_py + t2_py;
+  double a1_pz = t1_pz + t2_pz;
+  double a1_e = t1_e + t2_e;
+  double a2_px = t3_px + t4_px;
+  double a2_py = t3_py + t4_py;
+  double a2_pz = t3_pz + t4_pz;
+  double a2_e = t3_e + t4_e;
+
+
+  double x_a1 =
+    (a2_px * a1_py - a2_py * a1_px) / (a2_px * a1_py - met_x * a2_py -
+                                       a2_py * a1_px + met_y * a2_px);
+  double x_a2 =
+    (a2_px * a1_py - a2_py * a1_px) / (a2_px * a1_py + met_x * a1_py -
+                                       a2_py * a1_px - met_y * a1_px);
+
+  m_truth_x_vis1->Fill(x_a1);
+  m_truth_x_vis2->Fill(x_a2);
+
+  double a1_phi = atan2 (a1_py, a1_px);
+  double a2_phi = atan2 (a2_py, a2_px);
+  double cos_dphi = cos (fabs (a2_phi - a1_phi));
+  m_truth_cos_dphi->Fill(cos_dphi);
+
+  double truth_m_2mu2tau =
+    sqrt (pow (a1_e + a2_e, 2) - pow (a1_px + a2_px, 2) -
+          pow (a1_py + a2_py, 2) - pow (a1_pz + a2_pz, 2));
+
+  cout << "truth_m_2mu2tau : " << truth_m_2mu2tau << endl;
+  m_truth_m_2mu2tau->Fill (truth_m_2mu2tau);
+  
+  PX=(*TruTauPx)[0]+(*TruTauPx)[1]+(*TruTauPx)[2]+(*TruTauPx)[3];
+  PY=(*TruTauPy)[0]+(*TruTauPy)[1]+(*TruTauPy)[2]+(*TruTauPy)[3];
+  PZ=(*TruTauPz)[0]+(*TruTauPz)[1]+(*TruTauPz)[2]+(*TruTauPz)[3];
+  E=(*TruTauEnergy)[0]+(*TruTauEnergy)[1]+(*TruTauEnergy)[2]+(*TruTauEnergy)[3];
+  M=pow(E*E-PX*PX-PY*PY-PZ*PZ,0.5);
+  
+  m_truth_m_2mu2tau_ratio->Fill (M/truth_m_2mu2tau);
+  
+  double truth_m_2mu2tau_collinear = truth_m_2mu2tau / sqrt (x_a1 * x_a2);
+  cout << "truth_m_2mu2tau_collinear : " << truth_m_2mu2tau_collinear << endl;
+
+  m_truth_m_2mu2tau_collinear->Fill (truth_m_2mu2tau_collinear);
+  
+  m_truth_m_2mu2tau_collinear_ratio->Fill (M/truth_m_2mu2tau_collinear);
+
+  cout <<"-------------------------------------------------------------"<<endl;
+  }
+  
+
+ bool jet_cleaning=false; // same like statuscode from algorithm
+ bool vertex_check=false; 
+ 
+ //count all events
+  ++GRL[0];
+
+  cout <<"**** Reconstructed information ****"<<endl;
+  
+  //**** muons ****
+  for (unsigned int i = 0; i < NStaco; i++)
+    {
+  //**** apply quality cut ****      
+   if((*StacoPt)[i]<=8.0){continue;}  
+   if(fabs((*StacoEta)[i])>=2.4){continue;}  
+   if((*StacoIsCombinedMuon)[i]!=1){continue;}
+   if(fabs((*StacoEPTrkPt)[i]-(*StacoInDetTrkPt)[i])>0.5*(*StacoInDetTrkPt)[i]){continue;}  
+//   if(((*StacoEtcone20)[i]/(*StacoPt)[i])>=0.1){continue;} // remove isolation for NMSSM analysis
+   m_mu_etcone20overpt->Fill((*StacoEtcone20)[i]/(*StacoPt)[i]);
+
+  //**** pre-select muons ****
+    Particle *t = new Particle((*StacoPx)[i],(*StacoPy)[i],(*StacoPz)[i],(*StacoEnergy)[i],(int)(*StacoCharge)[i]);
+      good_muons->push_back(t);
+//   cout<<"**** found a good muon candidate ****"<<endl;
+     cout<<"Muon("<<i<<") pt:"<<(*StacoPt)[i]<<", Eta:"<<(*StacoEta)[i]<<", Phi:"<<(*StacoPhi)[i]
+         <<", Charge:"<<(*StacoCharge)[i]<<", Etcone20:"<<(*StacoEtcone20)[i]<<endl;
+     ++n_good_muons;
+    }
+  sort (good_muons->begin (), good_muons->end (), Sort_by_Pt ());
+
+   // Load the "map" for OTX checking
+   if(Data_MC==1){
+      egammaOQ::LoadOQMaps(RunNumber); //Now you can do it for every event because if the run is the same as the previous run, it returns immediately.
+   }
+
+   if(Data_MC==2){
+      egammaOQ::LoadOQMaps(167521);
+   }
+ 
+  //****  electrons ****
+   for(unsigned int i = 0; i < NElectron; i++)
+    {
+ 
+  //**** apply quality cut ****      
+   double etaBE2 = fabs((*ElectronEtaBE2)[i]);
+   unsigned long int isEM = (*ElectronIsEM)[i];
+   bool expectBLayer=false;
+   if ((*ElectronExpectHitInBLayer)[i]==1) expectBLayer=true;
+   else expectBLayer=false;
+   double eT = cosh(etaBE2) != 0. ? ((*ElectronCLusterEnergy)[i]*1000.0)/cosh(etaBE2) : 0.;
+   double Reta = (*ElectronE277)[i] != 0. ? (*ElectronE237)[i]*1.0/(*ElectronE277)[i] : 0.; // in case of 0?
+   double w2 = (*ElectronWeta2)[i];
+ 
+//   cout << "ELEC "<<GRL[0]<<" "<<i<<" "<<i<<" pt=" << (*ElectronPt)[i] << " eta=" << (*ElectronEta)[i] << " phi=" << (*ElectronPhi)[i] << " isEM=" << isEM << " BHit=" << expectBLayer << " e237=" << (*ElectronE237)[i] << " e277=" << (*ElectronE277)[i] << " weta2=" << (*ElectronWeta2)[i] << endl;  
+   
+   if((*ElectronPt)[i]<=10){continue;}  
+   if(etaBE2>=2.47){continue;}  
+   if(etaBE2>=1.37&&etaBE2<=1.52){continue;}  
+   if((*ElectronAuthor)[i]!=1&&(*ElectronAuthor)[i]!=3){continue;}
+   if(((*ElectronEtcone20)[i]/(*ElectronPt)[i])>=0.1){continue;}  
+ 
+   if(!isRobusterTight( isEM, expectBLayer, etaBE2, eT, Reta, w2)){continue;}
+
+   //  OTX checking     
+  
+   if(Data_MC==1){
+      if(egammaOQ::checkOQClusterElectron(RunNumber, (*ElectronCLusterEta)[i], (*ElectronCLusterPhi)[i])==3){
+   continue;}
+   }
+  
+   if(Data_MC==2){
+      if(egammaOQ::checkOQClusterElectron(167521, (*ElectronCLusterEta)[i], (*ElectronCLusterPhi)[i])==3){
+   continue;}
+   }
+
+//   cout<<"OTX check failed, veto this electron!"<<endl; 
+//   cout<<"Electron pt:"<<(*ElectronPt)[i]<<", Eta:"<<(*ElectronEta)[i]<<", Phi:"<<(*ElectronPhi)[i]<<", Charge:"<<(*ElectronCharge)[i]<<endl;
+
+    bool overlap=false;
+    for( unsigned int j=0; j < good_muons->size(); j++){
+      double deta = fabs ((*ElectronEta)[i] - (*good_muons)[j]->Eta ());
+      double dphi = fabs ((*ElectronPhi)[i] - (*good_muons)[j]->Phi ());
+      if(dphi>M_PI) dphi = 2*M_PI - dphi;
+      double dR = sqrt(deta*deta + dphi*dphi); 
+      if(dR<0.2){overlap=true;}
+    } 
+   
+   if(overlap){continue;} 
+
+  //**** pre-select electrons ****
+   Particle *t = new Particle((*ElectronPx)[i],(*ElectronPy)[i],(*ElectronPz)[i],(*ElectronEnergy)[i],(int)(*ElectronCharge)[i]);
+      good_electrons->push_back(t);
+//   cout<<"**** found a good electron candidate ****"<<endl;
+   cout<<"Electron("<<i<<") pt:"<<(*ElectronPt)[i]<<", Eta:"<<(*ElectronEta)[i]<<", Phi:"<<(*ElectronPhi)[i]<<", Charge:"<<(*ElectronCharge)[i]<<endl;
+     ++n_good_electrons;
+    }
+  sort (good_electrons->begin (), good_electrons->end (), Sort_by_Pt ());
+
+// **** taujets **** 
+  for (unsigned int i = 0; i < NTaujet; i++)
+    {
+
+//  **** apply quality cut ****      
+   if((*TaujetPt)[i]<=10.0){continue;}  
+   if(fabs((*TaujetEta)[i])>=2.5){continue;}  
+   if((*TaujetAuthor)[i]!=1 &&(*TaujetAuthor)[i]!=3){continue;}  
+   if((*TaujetNTrack)[i] != 1 && (*TaujetNTrack)[i] != 3){continue;}
+   if(fabs((*TaujetCharge)[i])!=1){continue;}  
+   if((*TaujetElectronVeto)[i]!=0){continue;}
+   if((*TaujetMuonVeto)[i]!=0){continue;} // no muon veto for NMSSM analysis
+
+  int tauID = 2;
+
+   // tauID - SimpleLooseTauID
+ if(tauID==1){
+   if((*TaujetNTrack)[i]==1){
+    if((*TaujetEMRadius)[i]>0.08 || (*TaujetTrkAvgDist)[i]>0.09 || (*TaujetEtOverPtLeadTrack)[i]>16.67) {continue;}
+  }
+
+  if((*TaujetNTrack)[i]>1){
+    if((*TaujetEMRadius)[i]>0.15 || (*TaujetTrkAvgDist)[i]>0.12 || (*TaujetEtOverPtLeadTrack)[i]>8.33) {continue;}
+  }
+  
+  }
+
+   // tauID - SimpleMediumTauID
+ if(tauID==2){
+  if((*TaujetNTrack)[i]==1){
+    if((*TaujetEMRadius)[i]>0.07 || (*TaujetTrkAvgDist)[i]>0.08 || (*TaujetEtOverPtLeadTrack)[i]>8.33) {continue;}
+  }
+
+  if((*TaujetNTrack)[i]>1){
+    if((*TaujetEMRadius)[i]>0.12 || (*TaujetTrkAvgDist)[i]>0.08 || (*TaujetEtOverPtLeadTrack)[i]>4.167) {continue;}
+  }
+  } 
+    bool overlap=false;
+   /* for( unsigned int j=0; j < good_muons->size(); j++){
+      double deta = fabs ((*TaujetEta)[i] - (*good_muons)[j]->Eta ());
+      double dphi = fabs ((*TaujetPhi)[i] - (*good_muons)[j]->Phi ());
+      if(dphi>M_PI) dphi = 2*M_PI - dphi;
+      double dR = sqrt(deta*deta + dphi*dphi); 
+      if(dR<0.2){overlap=true;}
+    } 
+  */ 
+    for( unsigned int j=0; j < good_electrons->size(); j++){
+      double deta = fabs ((*TaujetEta)[i] - (*good_electrons)[j]->Eta ());
+      double dphi = fabs ((*TaujetPhi)[i] - (*good_electrons)[j]->Phi ());
+      if(dphi>M_PI) dphi = 2*M_PI - dphi;
+      double dR = sqrt(deta*deta + dphi*dphi); 
+      if(dR<0.2){overlap=true;}
+    } 
+   
+   if(overlap){continue;} 
+
+      //**** pre-select taujets **** 
+      Particle *t =
+	new Particle ((*TaujetPx)[i], (*TaujetPy)[i], (*TaujetPz)[i],
+			   (*TaujetEnergy)[i], int ((*TaujetCharge)[i]));
+      good_taujets->push_back (t);
+//      cout << "**** found a good taujet candidate ****" << endl;
+      cout<<"Taujet("<<i<<") pt:"<<(*TaujetPt)[i]<<", Eta:"<<(*TaujetEta)[i]<<", Phi:" <<(*TaujetPhi)[i]<<", Charge:"<<(*TaujetCharge)[i]<<", NTrack:" << (*TaujetNTrack)[i]<<", EMRadius:"<<(*TaujetEMRadius)[i]<<", TrkAvgDist:"<<(*TaujetTrkAvgDist)[i]<<", Et/Pt:"<<(*TaujetEtOverPtLeadTrack)[i]<<endl;
+
+      int nstaco=0;
+      for (int n = 0; n < (*TaujetNTrack)[i]; n++)
+	{
+	  if (n == 0)
+	    {
+	      double TrkPt =
+		pow (pow ((*TaujetTrk0Px)[i], 2) +
+		     pow ((*TaujetTrk0Py)[i], 2), 0.5);
+	      double TrkEta = asinh ((*TaujetTrk0Pz)[i] / (TrkPt));
+	      double TrkPhi = atan2 ((*TaujetTrk0Py)[i], (*TaujetTrk0Px)[i]);
+	      for (unsigned int j = 0; j < good_muons->size (); j++)
+		{
+		  int isStacoTrk = 0;
+		  double deta = fabs (TrkEta - (*good_muons)[j]->Eta ());
+		  double dphi = fabs (TrkPhi - (*good_muons)[j]->Phi ());
+		  if (dphi >  M_PI)
+		    dphi = 2 * M_PI - dphi;
+		  double dR = sqrt (deta * deta + dphi * dphi);
+		  if (dR < 0.001)
+		    {
+		      isStacoTrk = 1;
+                      ++nstaco;
+		    }
+		  cout<<"Tau_trk 1 Pt:"<<TrkPt<<", Eta : "<<TrkEta<<", Phi : "<<TrkPhi<<"dR with mu"<<j+1<<" : "<<dR<<", is StacoTrk? : "<<isStacoTrk<<endl;
+		}
+	    }
+	  if (n == 1)
+	    {
+	      double TrkPt =
+		pow (pow ((*TaujetTrk1Px)[i], 2) +
+		     pow ((*TaujetTrk1Py)[i], 2), 0.5);
+	      double TrkEta = asinh ((*TaujetTrk1Pz)[i] / (TrkPt));
+	      double TrkPhi = atan2 ((*TaujetTrk1Py)[i], (*TaujetTrk1Px)[i]);
+	      for (unsigned int j = 0; j < good_muons->size (); j++)
+		{
+		  int isStacoTrk = 0;
+		  double deta = fabs (TrkEta - (*good_muons)[j]->Eta ());
+		  double dphi = fabs (TrkPhi - (*good_muons)[j]->Phi ());
+		  if (dphi >  M_PI)
+		    dphi = 2 * M_PI - dphi;
+		  double dR = sqrt (deta * deta + dphi * dphi);
+		  if (dR < 0.001)
+		    {
+		      isStacoTrk = 1;
+                      ++nstaco;
+		    }
+		  cout<<"Tau_trk 2 Pt:"<<TrkPt<<", Eta : "<<TrkEta<<", Phi : "<<TrkPhi<<"dR with mu"<<j+1<<" : "<<dR<<", is StacoTrk? : "<<isStacoTrk<<endl;
+		}
+	    }
+	  if (n == 2)
+	    {
+	      double TrkPt =
+		pow (pow ((*TaujetTrk2Px)[i], 2) +
+		     pow ((*TaujetTrk2Py)[i], 2), 0.5);
+	      double TrkEta = asinh ((*TaujetTrk2Pz)[i] / (TrkPt));
+	      double TrkPhi = atan2 ((*TaujetTrk2Py)[i], (*TaujetTrk2Px)[i]);
+	      for (unsigned int j = 0; j < good_muons->size (); j++)
+		{
+		  int isStacoTrk = 0;
+		  double deta = fabs (TrkEta - (*good_muons)[j]->Eta ());
+		  double dphi = fabs (TrkPhi - (*good_muons)[j]->Phi ());
+		  if (dphi >  M_PI)
+		    dphi = 2 * M_PI - dphi;
+		  double dR = sqrt (deta * deta + dphi * dphi);
+		  if (dR < 0.001)
+		    {
+		      isStacoTrk = 1;
+                      ++nstaco;
+		    }
+		  cout<<"Tau_trk 3 Pt:"<<TrkPt<<", Eta : "<<TrkEta<<", Phi : "<<TrkPhi<<"dR with mu"<<j+1<<" : "<<dR<<", is StacoTrk? : "<<isStacoTrk<<endl;
+		}
+	    }
+	  if (n == 3)
+	    {
+	      double TrkPt =
+		pow (pow ((*TaujetTrk3Px)[i], 2) +
+		     pow ((*TaujetTrk3Py)[i], 2), 0.5);
+	      double TrkEta = asinh ((*TaujetTrk3Pz)[i] / (TrkPt));
+	      double TrkPhi = atan2 ((*TaujetTrk3Py)[i], (*TaujetTrk3Px)[i]);
+	      for (unsigned int j = 0; j < good_muons->size (); j++)
+		{
+		  int isStacoTrk = 0;
+		  double deta = fabs (TrkEta - (*good_muons)[j]->Eta ());
+		  double dphi = fabs (TrkPhi - (*good_muons)[j]->Phi ());
+		  if (dphi >  M_PI)
+		    dphi = 2 * M_PI - dphi;
+		  double dR = sqrt (deta * deta + dphi * dphi);
+		  if (dR < 0.001)
+		    {
+		      isStacoTrk = 1;
+                      ++nstaco;
+                    }
+		  cout<<"Tau_trk 4 Pt:"<<TrkPt<<", Eta : "<<TrkEta<<", Phi : "<<TrkPhi<<"dR with mu"<<j+1<<" : "<<dR<<", is StacoTrk? : "<<isStacoTrk<<endl;
+		}
+	    }
+	}
+     ++n_good_taujets;
+
+    }
+  sort (good_taujets->begin (), good_taujets->end (), Sort_by_Pt ());
+
+  for (unsigned int i = 0; i < NJetAntiKt4Topo; i++)
+    {
+   
+   double pt_em   = (*JetAntiKt4TopoPt_EMScale)[i];
+   double n90     = (*JetAntiKt4TopoN90_OLD)[i];
+   double HECf    = (*JetAntiKt4TopoHECF)[i];
+   double EMF     = (*JetAntiKt4TopoEMF)[i];
+   double fbadQ   = (*JetAntiKt4TopoJetQuality)[i];
+   double time    = (*JetAntiKt4TopoJetTime)[i];
+   double Fmax    = (*JetAntiKt4TopoFracSamplingMax)[i];
+   double emjes   = (*JetAntiKt4TopoPt_EMJES)[i];
+   double jet_eta = asinh((*JetAntiKt4TopoPz_EMScale)[i]/(*JetAntiKt4TopoPt_EMScale)[i]);  
+   double jet_phi = atan2((*JetAntiKt4TopoPy_EMScale)[i],(*JetAntiKt4TopoPx_EMScale)[i]);  
+
+   EMJESFixer jetEMJESfixer;
+   if( emjes == 0 ){
+    emjes = jetEMJESfixer.fixAntiKt4H1Topo(pt_em*1000,jet_eta);
+   }
+   if((*JetAntiKt4TopoPt_EMScale)[i]*emjes<=20){continue;}  
+     // Jet cleaning definition 
+     // EM coherent noise
+     if(EMF>0.95 && fabs(fbadQ)>0.8){jet_cleaning=true;} 
+     // HEC spike
+     if(HECf>0.8 && n90<=5.0){jet_cleaning=true;} 
+     if(HECf>0.5 && fabs(fbadQ)>0.5){jet_cleaning=true;} 
+     // Cosmic-Beam background
+     if(fabs(time)>25.0){jet_cleaning=true;}
+     if(EMF<0.05){
+
+        if(fabs((*JetAntiKt4TopoEta)[i])<2.5){
+          
+           bool matched=false;
+       
+           for (unsigned int j = 0; j < NTaujet; j++){
+           double deta=fabs((*TaujetEta)[j]-jet_eta);
+           double dphi=fabs((*TaujetPhi)[j]-jet_phi);
+           if(dphi>M_PI) dphi=2*M_PI-dphi;
+           double dR=sqrt(deta*deta+dphi*dphi); 
+              if(dR<0.2){
+                 if(((*TaujetAuthor)[j]==1 || (*TaujetAuthor)[j]==3) && (*TaujetNTrack)[j]!=0){
+                 matched=true;
+                 }
+              }
+           }
+     
+          if(matched==false){jet_cleaning=true;}  
+        }
+     else {jet_cleaning=true;}  
+
+     }
+     if(Fmax>0.99 && fabs(jet_eta)<2.0){jet_cleaning=true;}
+  //**** apply quality cut ****      
+   
+   if(fabs(jet_eta)>=4.5){continue;}  
+
+  // cout<<"n90 : "<<n90<<", HECf : "<<HECf<<", time : "<<time<<", fbadQ : "<<fbadQ<<", EMF : "<<EMF<<", EMJES : "<<emjes<<", PT_EM : "<<(*JetAntiKt4TopoPt_EMScale)[i]<<endl;  
+
+      bool overlap=false;   
+     
+     for(unsigned int j=0;j<good_muons->size();j++){
+        double deta=fabs((*good_muons)[j]->Eta()-jet_eta);
+        double dphi=fabs((*good_muons)[j]->Phi()-jet_phi);
+        if(dphi>M_PI) dphi=2*M_PI-dphi;
+        double dR=sqrt(deta*deta+dphi*dphi); 
+        if(dR<0.2){overlap=true;
+ /*  cout<<"**** found muon-electron overlap here ****"<<endl;
+        cout<<"muon   pt   : "<<(*good_muons)[j]->Pt()<<", eta : "<<(*good_muons)[j]->Eta()<<", phi : "<<(*good_muons)[j]->Phi()<<", pdgid : "<<(*good_muons)[j]->PdgId()<<endl;
+*/       }
+     }
+      
+     for(unsigned int j=0;j<good_electrons->size();j++){
+        double deta=fabs((*good_electrons)[j]->Eta()-jet_eta);
+        double dphi=fabs((*good_electrons)[j]->Phi()-jet_phi);
+        if(dphi>M_PI) dphi=2*M_PI-dphi;
+        double dR=sqrt(deta*deta+dphi*dphi); 
+        if(dR<0.2){overlap=true;
+/*   cout<<"**** found electron-jet overlap here ****"<<endl;
+        cout<<"electron pt : "<<(*good_electrons)[j]->Pt()<<", eta : "<<(*good_electrons)[j]->Eta()<<", phi : "<<(*good_electrons)[j]->Phi()<<", pdgid : "<<(*good_electrons)[j]->PdgId()<<endl;
+  */     }
+     }
+
+     for(unsigned int j=0;j<good_taujets->size();j++){
+        double deta=fabs((*good_taujets)[j]->Eta()-jet_eta);
+        double dphi=fabs((*good_taujets)[j]->Phi()-jet_phi);
+        if(dphi>M_PI) dphi=2*M_PI-dphi;
+        double dR=sqrt(deta*deta+dphi*dphi); 
+        if(dR<0.2){overlap=true;
+ /*  cout<<"**** found taujet-jet overlap here ****"<<endl;
+        cout<<"taujet pt : "<<(*good_taujets)[j]->Pt()<<", eta : "<<(*good_taujets)[j]->Eta()<<", phi : "<<(*good_taujets)[j]->Phi()<<", pdgid : "<<(*good_taujets)[j]->PdgId()<<endl;
+   */    }
+     }
+
+     if(overlap){continue;}
+//   cout<<"**** found a good jet candidate ****"<<endl;
+     cout<<"JetAntiKt4Topo("<<i<<") pt:"<<(*JetAntiKt4TopoPt_EMScale)[i]<<", Eta:"<<jet_eta<<", Phi:"<<jet_phi<<", FTagW:"<<(*JetAntiKt4TopoFTagW)[i]<<endl;
+
+    Particle *t = new Particle((*JetAntiKt4TopoPx_EMScale)[i]*emjes,(*JetAntiKt4TopoPy_EMScale)[i]*emjes,(*JetAntiKt4TopoPz_EMScale)[i]*emjes,(*JetAntiKt4TopoEnergy_EMScale)[i]*emjes,(int)(*JetAntiKt4TopoFTagW)[i]);
+      good_jets->push_back(t);
+     
+  ++n_good_jets;
+    }
+  sort (good_jets->begin (), good_jets->end (), Sort_by_Pt ());
+
+
+  // **** dump size info ****
+    cout << "This event has " 
+    << good_muons->size () << " muon(s) and " 
+    << good_electrons->size ()<< " electron(s) and "
+    << good_taujets->size () << " taujet(s) and "
+    << good_jets->size () << " jet(s)" << endl;
+
+    m_n_ele->Fill(good_electrons->size());
+    m_n_mu->Fill(good_muons->size());
+    m_n_taujet->Fill(good_taujets->size());
+    m_n_jet->Fill(good_jets->size());
+
+
+ // correction on MET
+ 
+  double METx=0.; 
+  double METy=0.; 
+  double MET=0.;
+  
+  METx=MetLocHadTopoEx+MetMuonBoyPx-MetRefMuonTrackEx;
+  METy=MetLocHadTopoEy+MetMuonBoyPy-MetRefMuonTrackEy;
+  MET=sqrt(METx*METx+METy*METy);  
+
+  //////////////////////////////////////
+  // **** start of event selection
+  //////////////////////////////////////
+
+ // ****  Start(No Cut) ****
+  
+ ++basic_cut[0];
+
+ if(Trig_EF_2mu6==1){
+ ++basic_cut_trig[0];
+ }
+
+  if(Weight==1){++basic_cut[1];
+ if(good_jets->size()==0){++basic_cut[2];}
+ if(good_jets->size()==1){++basic_cut[3];}
+ if(good_jets->size()==2){++basic_cut[4];}
+ if(good_jets->size()==3){++basic_cut[5];}
+ if(good_jets->size()>3){++basic_cut[6];}
+ }
+  if(Weight==-1){--basic_cut[1];
+ if(good_jets->size()==0){--basic_cut[2];}
+ if(good_jets->size()==1){--basic_cut[3];}
+ if(good_jets->size()==2){--basic_cut[4];}
+ if(good_jets->size()==3){--basic_cut[5];}
+ if(good_jets->size()>3){--basic_cut[6];}
+ }
+
+ if(Trig_EF_2mu6==1){
+  if(Weight==1){++basic_cut_trig[1];
+ if(good_jets->size()==0){++basic_cut_trig[2];}
+ if(good_jets->size()==1){++basic_cut_trig[3];}
+ if(good_jets->size()==2){++basic_cut_trig[4];}
+ if(good_jets->size()==3){++basic_cut_trig[5];}
+ if(good_jets->size()>3){++basic_cut_trig[6];}
+ }
+  if(Weight==-1){--basic_cut_trig[1];
+ if(good_jets->size()==0){--basic_cut_trig[2];}
+ if(good_jets->size()==1){--basic_cut_trig[3];}
+ if(good_jets->size()==2){--basic_cut_trig[4];}
+ if(good_jets->size()==3){--basic_cut_trig[5];}
+ if(good_jets->size()>3){--basic_cut_trig[6];}
+ }
+ }
+
+
+ // **** at least 2mu2tau ****
+
+  int muon_count=0;
+  int taujet_count=0;
+ for(unsigned int i = 0; i < NStaco; i++){
+    if((*StacoPt)[i]<=7.5){continue;}  
+    if(fabs((*StacoEta)[i])>=2.5){continue;}  
+    ++muon_count; 
+   }
+
+ for(unsigned int i = 0; i < NTaujet; i++){
+    if((*TaujetPt)[i]<=7.5){continue;}  
+    if(fabs((*TaujetEta)[i])>=2.5){continue;}  
+    ++taujet_count; 
+   } 
+
+ if(muon_count<2||taujet_count<2){return;}
+
+  if(Weight==1){++basic_cut[7];
+ if(good_jets->size()==0){++basic_cut[8];}
+ if(good_jets->size()==1){++basic_cut[9];}
+ if(good_jets->size()==2){++basic_cut[10];}
+ if(good_jets->size()==3){++basic_cut[11];}
+ if(good_jets->size()>3){++basic_cut[12];}
+ }
+  if(Weight==-1){--basic_cut[7];
+ if(good_jets->size()==0){--basic_cut[8];}
+ if(good_jets->size()==1){--basic_cut[9];}
+ if(good_jets->size()==2){--basic_cut[10];}
+ if(good_jets->size()==3){--basic_cut[11];}
+ if(good_jets->size()>3){--basic_cut[12];}
+ }
+
+ if(Trig_EF_2mu6==1){
+  if(Weight==1){++basic_cut_trig[7];
+ if(good_jets->size()==0){++basic_cut_trig[8];}
+ if(good_jets->size()==1){++basic_cut_trig[9];}
+ if(good_jets->size()==2){++basic_cut_trig[10];}
+ if(good_jets->size()==3){++basic_cut_trig[11];}
+ if(good_jets->size()>3){++basic_cut_trig[12];}
+ }
+  if(Weight==-1){--basic_cut_trig[7];
+ if(good_jets->size()==0){--basic_cut_trig[8];}
+ if(good_jets->size()==1){--basic_cut_trig[9];}
+ if(good_jets->size()==2){--basic_cut_trig[10];}
+ if(good_jets->size()==3){--basic_cut_trig[11];}
+ if(good_jets->size()>3){--basic_cut_trig[12];}
+ }
+ }
+
+  // ****  Vertex requirement ****
+
+  for(unsigned int i=0;i<NVxPrimary;i++){
+  if(((*VxPrimaryNTrk)[i]>=3)&&fabs((*VxPrimaryZ)[i])<150.0){
+  vertex_check=true;}
+  } 
+ 
+ if(vertex_check!=true){return;}
+
+ if(Weight==1){++basic_cut[13];
+ if(good_jets->size()==0){++basic_cut[14];}
+ if(good_jets->size()==1){++basic_cut[15];}
+ if(good_jets->size()==2){++basic_cut[16];}
+ if(good_jets->size()==3){++basic_cut[17];}
+ if(good_jets->size()>3){++basic_cut[18];}
+ }
+ if(Weight==-1){--basic_cut[13];
+ if(good_jets->size()==0){--basic_cut[14];}
+ if(good_jets->size()==1){--basic_cut[15];}
+ if(good_jets->size()==2){--basic_cut[16];}
+ if(good_jets->size()==3){--basic_cut[17];}
+ if(good_jets->size()>3){--basic_cut[18];}
+ }
+
+ if(Trig_EF_2mu6==1){
+ if(Weight==1){++basic_cut_trig[13];
+ if(good_jets->size()==0){++basic_cut_trig[14];}
+ if(good_jets->size()==1){++basic_cut_trig[15];}
+ if(good_jets->size()==2){++basic_cut_trig[16];}
+ if(good_jets->size()==3){++basic_cut_trig[17];}
+ if(good_jets->size()>3){++basic_cut_trig[18];}
+ }
+ if(Weight==-1){--basic_cut_trig[13];
+ if(good_jets->size()==0){--basic_cut_trig[14];}
+ if(good_jets->size()==1){--basic_cut_trig[15];}
+ if(good_jets->size()==2){--basic_cut_trig[16];}
+ if(good_jets->size()==3){--basic_cut_trig[17];}
+ if(good_jets->size()>3){--basic_cut_trig[18];}
+ }
+ }
+
+ // **** jet_cleaning veto ****
+ 
+ if(jet_cleaning==true){return;}
+ 
+ if(Weight==1){++basic_cut[19];
+ if(good_jets->size()==0){++basic_cut[20];}
+ if(good_jets->size()==1){++basic_cut[21];}
+ if(good_jets->size()==2){++basic_cut[22];}
+ if(good_jets->size()==3){++basic_cut[23];}
+ if(good_jets->size()>3){++basic_cut[24];}
+ }
+ if(Weight==-1){--basic_cut[19];
+ if(good_jets->size()==0){--basic_cut[20];}
+ if(good_jets->size()==1){--basic_cut[21];}
+ if(good_jets->size()==2){--basic_cut[22];}
+ if(good_jets->size()==3){--basic_cut[23];}
+ if(good_jets->size()>3){--basic_cut[24];}
+ }
+
+ if(Trig_EF_2mu6==1){
+ if(Weight==1){++basic_cut_trig[19];
+ if(good_jets->size()==0){++basic_cut_trig[20];}
+ if(good_jets->size()==1){++basic_cut_trig[21];}
+ if(good_jets->size()==2){++basic_cut_trig[22];}
+ if(good_jets->size()==3){++basic_cut_trig[23];}
+ if(good_jets->size()>3){++basic_cut_trig[24];}
+ }
+ if(Weight==-1){--basic_cut_trig[19];
+ if(good_jets->size()==0){--basic_cut_trig[20];}
+ if(good_jets->size()==1){--basic_cut_trig[21];}
+ if(good_jets->size()==2){--basic_cut_trig[22];}
+ if(good_jets->size()==3){--basic_cut_trig[23];}
+ if(good_jets->size()>3){--basic_cut_trig[24];}
+ }
+ }
+
+   for(unsigned int i=0;i<good_electrons->size();i++){
+  
+      double pt=(*good_electrons)[i]->Pt();
+      double eta=(*good_electrons)[i]->Eta();
+      double phi=(*good_electrons)[i]->Phi();
+
+      m_ele_pt->Fill(pt);
+      m_ele_eta->Fill(eta);
+      m_ele_phi->Fill(phi);
+   }
+
+   for(unsigned int i=0;i<good_muons->size();i++){
+  
+      double pt=(*good_muons)[i]->Pt();
+      double eta=(*good_muons)[i]->Eta();
+      double phi=(*good_muons)[i]->Phi();
+
+      m_mu_pt->Fill(pt);
+      m_mu_eta->Fill(eta);
+      m_mu_phi->Fill(phi);
+   }
+
+   for(unsigned int i=0;i<good_taujets->size();i++){
+  
+      double pt=(*good_taujets)[i]->Pt();
+      double eta=(*good_taujets)[i]->Eta();
+      double phi=(*good_taujets)[i]->Phi();
+
+      m_tau_pt->Fill(pt);
+      m_tau_eta->Fill(eta);
+      m_tau_phi->Fill(phi);
+   }
+
+   for(unsigned int i=0;i<good_jets->size();i++){
+  
+      double pt=(*good_jets)[i]->Pt();
+      double eta=(*good_jets)[i]->Eta();
+      double phi=(*good_jets)[i]->Phi();
+
+       m_jet_pt->Fill(pt);
+       m_jet_eta->Fill(eta);
+       m_jet_phi->Fill(phi);
+   }
+
+  cout << "MET : " << MET << ", METx : " << METx << ", METy : " << METy  << endl;
+
+  double mu1_eta = 0;
+  double mu1_phi = 0;
+  double mu1_e = 0;
+  double mu1_q = 0;
+  double mu1_px = 0;
+  double mu1_py = 0;
+  double mu1_pz = 0;
+  double mu1_pt = 0;
+  double mu2_eta = 0;
+  double mu2_phi = 0;
+  double mu2_e = 0;
+  double mu2_q = 0;
+  double mu2_px = 0;
+  double mu2_py = 0;
+  double mu2_pz = 0;
+  double mu2_pt = 0;
+
+  double tau1_eta = 0;
+  double tau1_phi = 0;
+  double tau1_e = 0;
+  double tau1_q = 0;
+  double tau1_px = 0;
+  double tau1_py = 0;
+  double tau1_pz = 0;
+  double tau1_pt = 0;
+  double tau2_eta = 0;
+  double tau2_phi = 0;
+  double tau2_e = 0;
+  double tau2_q = 0;
+  double tau2_px = 0;
+  double tau2_py = 0;
+  double tau2_pz = 0;
+  double tau2_pt = 0;
+
+  double dR1 = 0;
+  double dR2 = 0;
+  double dR3 = 0;
+  double dR4 = 0;
+  double vis1_px = 0;
+  double vis1_py = 0;
+  double vis1_pz = 0;
+  double vis1_e = 0;
+  double vis2_px = 0;
+  double vis2_py = 0;
+  double vis2_pz = 0;
+  double vis2_e = 0;
+  double x_vis1 = 0;
+  double x_vis2 = 0;
+  double m_vis1vis2 = 0;
+  double m_vis1vis2_recon = 0;
+  double vis1_phi = 0;
+  double vis2_phi = 0;
+  double cos_dphi = 0;
+
+
+// Category 1 (at least 2 muons and 2 taujets, MET>20GeV, Collinear Method) 
+
+  bool go_category1_2 = false;
+  bool go_category1_3 = false;
+  bool go_category1_4 = false;
+  bool go_category1_5 = false;
+  bool go_category1_6 = false;
+  bool go_category1_7 = false;
+  
+  // define some variables here
+ double m_ll=0;
+ double m_hh=0;
+ double m_l1h1=0;
+ double m_l1h2=0;
+ double m_l2h1=0;
+ double m_l2h2=0;
+ double inv_mass = 0;
+
+ if(Weight==1){ ++category1[0];}
+ if(Weight==-1){ --category1[0];}
+
+ if(Trig_EF_2mu6==1){
+ if(Weight==1){ ++category1_trig[0];}
+ if(Weight==-1){ --category1_trig[0];}
+ }
+
+  // histogram for cut 0
+
+  // **** category1_1 **** require exactly 2 muons and 2 taujets (electron veto) 
+  if (good_muons->size () == 2 && good_taujets->size () == 2 && good_electrons->size() == 0)
+    {
+
+      go_category1_2 = true;
+ 
+
+      if(Weight==1){ ++category1[1];}
+      if(Weight==-1){ --category1[1];}
+      
+      // muon and taujet kinematics 
+      mu1_eta = (*good_muons)[0]->Eta ();
+      mu1_phi = (*good_muons)[0]->Phi ();
+      mu1_e = (*good_muons)[0]->E ();
+      mu1_q = (*good_muons)[0]->PdgId ();
+      mu1_px = (*good_muons)[0]->Px ();
+      mu1_py = (*good_muons)[0]->Py ();
+      mu1_pz = (*good_muons)[0]->Pz ();
+      mu1_pt = (*good_muons)[0]->Pt ();
+      mu2_eta = (*good_muons)[1]->Eta ();
+      mu2_phi = (*good_muons)[1]->Phi ();
+      mu2_e = (*good_muons)[1]->E ();
+      mu2_q = (*good_muons)[1]->PdgId ();
+      mu2_px = (*good_muons)[1]->Px ();
+      mu2_py = (*good_muons)[1]->Py ();
+      mu2_pz = (*good_muons)[1]->Pz ();
+      mu2_pt = (*good_muons)[1]->Pt ();
+
+      tau1_eta = (*good_taujets)[0]->Eta ();
+      tau1_phi = (*good_taujets)[0]->Phi ();
+      tau1_e = (*good_taujets)[0]->E ();
+      tau1_q = (*good_taujets)[0]->PdgId ();
+      tau1_px = (*good_taujets)[0]->Px ();
+      tau1_py = (*good_taujets)[0]->Py ();
+      tau1_pz = (*good_taujets)[0]->Pz ();
+      tau1_pt = (*good_taujets)[0]->Pt ();
+      tau2_eta = (*good_taujets)[1]->Eta ();
+      tau2_phi = (*good_taujets)[1]->Phi ();
+      tau2_e = (*good_taujets)[1]->E ();
+      tau2_q = (*good_taujets)[1]->PdgId ();
+      tau2_px = (*good_taujets)[1]->Px ();
+      tau2_py = (*good_taujets)[1]->Py ();
+      tau2_pz = (*good_taujets)[1]->Pz ();
+      tau2_pt = (*good_taujets)[1]->Pt ();
+
+      // mu-mu invariant mass 
+      m_ll = sqrt (pow (mu1_e + mu2_e, 2) - pow (mu1_px + mu2_px, 2) - pow (mu1_py + mu2_py, 2) - pow (mu1_pz + mu2_pz, 2));
+      cout<<"m_mumu : "<<m_ll<<endl; 
+      // taujet-taujet invariant mass
+      m_hh = sqrt (pow (tau1_e + tau2_e, 2) - pow (tau1_px + tau2_px, 2) - pow (tau1_py + tau2_py, 2) - pow (tau1_pz + tau2_pz, 2));
+      cout<<"m_tautau : "<<m_hh<<endl; 
+   
+      // muon-taujet invariant mass 
+      m_l1h1 = sqrt (pow (mu1_e + tau1_e, 2) - pow (mu1_px + tau1_px, 2) - pow (mu1_py + tau1_py, 2) - pow (mu1_pz + tau1_pz, 2));
+      m_l1h2 = sqrt (pow (mu1_e + tau2_e, 2) - pow (mu1_px + tau2_px, 2) - pow (mu1_py + tau2_py, 2) - pow (mu1_pz + tau2_pz, 2));
+      m_l2h1 = sqrt (pow (mu2_e + tau1_e, 2) - pow (mu2_px + tau1_px, 2) - pow (mu2_py + tau1_py, 2) - pow (mu2_pz + tau1_pz, 2));
+      m_l2h2 = sqrt (pow (mu2_e + tau2_e, 2) - pow (mu2_px + tau2_px, 2) - pow (mu2_py + tau2_py, 2) - pow (mu2_pz + tau2_pz, 2));
+
+      // 2mu2tau invariant mass
+      inv_mass = sqrt (pow (mu1_e + mu2_e + tau1_e + tau2_e, 2)
+                  - pow (mu1_px + mu2_px + tau1_px + tau2_px, 2) 
+                  - pow (mu1_py + mu2_py + tau1_py + tau2_py, 2) 
+                  - pow (mu1_pz + mu2_pz + tau1_pz + tau2_pz, 2)); 
+
+      if(Trig_EF_2mu6==1){
+      if(Weight==1){ ++category1_trig[1];}
+      if(Weight==-1){ --category1_trig[1];}
+      
+      // filling all variables to histogram
+      m_MET_cut1->Fill(MET,Weight);
+      m_m_mumu_cut1->Fill(m_ll,Weight); 
+      m_m_tautau_cut1->Fill(m_hh,Weight); 
+      m_inv_mass_cut1->Fill(inv_mass,Weight);
+      m_mu1_pt_cut1->Fill(mu1_pt,Weight); 
+      m_mu1_eta_cut1->Fill(mu1_eta,Weight); 
+      m_mu1_phi_cut1->Fill(mu1_phi,Weight); 
+      m_mu2_pt_cut1->Fill(mu2_pt,Weight); 
+      m_mu2_eta_cut1->Fill(mu2_eta,Weight); 
+      m_mu2_phi_cut1->Fill(mu2_phi,Weight); 
+      m_tau1_pt_cut1->Fill(tau1_pt,Weight); 
+      m_tau1_eta_cut1->Fill(tau1_eta,Weight); 
+      m_tau1_phi_cut1->Fill(tau1_phi,Weight); 
+      m_tau2_pt_cut1->Fill(tau2_pt,Weight); 
+      m_tau2_eta_cut1->Fill(tau2_eta,Weight); 
+      m_tau2_phi_cut1->Fill(tau2_phi,Weight); 
+      } 
+
+  }
+
+  // **** category1_2 **** require 2 pairs of muon-taujet with dR<0.5 
+  if ((m_ll<70||m_ll>110)&&go_category1_2 == true)
+    {
+     dR1 = (*good_muons)[0]->DeltaR (*(*good_taujets)[0]);
+     dR2 = (*good_muons)[0]->DeltaR (*(*good_taujets)[1]);
+     dR3 = (*good_muons)[1]->DeltaR (*(*good_taujets)[0]);
+     dR4 = (*good_muons)[1]->DeltaR (*(*good_taujets)[1]);
+     
+    if((dR1 < 0.3 && dR2 > 1.0 && dR3 > 1.0 && dR4 < 0.3) || (dR1 > 1.0 && dR2 < 0.3 && dR3 < 0.3 && dR4 > 1.0))
+       {
+	 go_category1_3 = true;
+
+         if(Weight==1){ ++category1[2];}
+         if(Weight==-1){ --category1[2];}
+        
+         if(Trig_EF_2mu6==1){
+         if(Weight==1){ ++category1_trig[2];}
+         if(Weight==-1){ --category1_trig[2];}
+ 
+         m_MET_cut2->Fill(MET,Weight);
+         m_m_mumu_cut2->Fill(m_ll,Weight); 
+         m_m_tautau_cut2->Fill(m_hh,Weight); 
+         m_inv_mass_cut2->Fill(inv_mass,Weight);
+
+         if(dR1<0.3 && dR4<0.3) {
+         m_m_mutau_cut2->Fill(m_l1h1,Weight);
+         m_m_mutau_cut2->Fill(m_l2h2,Weight);
+         m_dR_recon_cut2->Fill(dR1,Weight);
+         m_dR_recon_cut2->Fill(dR4,Weight);
+         } 
+ 
+         if(dR2<0.3 && dR3<0.3) {
+         m_m_mutau_cut2->Fill(m_l1h2,Weight);
+         m_m_mutau_cut2->Fill(m_l2h1,Weight); 
+         m_dR_recon_cut2->Fill(dR2,Weight);
+         m_dR_recon_cut2->Fill(dR3,Weight);
+         }
+ 
+         m_mu1_pt_cut2->Fill(mu1_pt,Weight); 
+         m_mu1_eta_cut2->Fill(mu1_eta,Weight); 
+         m_mu1_phi_cut2->Fill(mu1_phi,Weight); 
+         m_mu2_pt_cut2->Fill(mu2_pt,Weight); 
+         m_mu2_eta_cut2->Fill(mu2_eta,Weight); 
+         m_mu2_phi_cut2->Fill(mu2_phi,Weight); 
+         m_tau1_pt_cut2->Fill(tau1_pt,Weight); 
+         m_tau1_eta_cut2->Fill(tau1_eta,Weight); 
+         m_tau1_phi_cut2->Fill(tau1_phi,Weight); 
+         m_tau2_pt_cut2->Fill(tau2_pt,Weight); 
+         m_tau2_eta_cut2->Fill(tau2_eta,Weight); 
+         m_tau2_phi_cut2->Fill(tau2_phi,Weight); 
+       
+        }
+       }
+    }
+
+
+
+  // **** category1_3 **** require muon-taujet with opposite charge 
+  if (go_category1_3 == true)
+    {
+      
+       // check charge and distance
+     cout<<"dR1 : "<<dR1<<", dR2 : "<<dR2<<", dR3 : "<<dR3<<", dR4 : "<<dR4<<endl;
+     cout<<"mu1_q : "<<mu1_q<<", mu2_q : "<<mu2_q<<", tau1_q : "<<tau1_q<<", tau2_q : "<<tau2_q<<endl;
+
+       if (dR1 < 0.3 && dR4 < 0.3) { 
+       if(mu1_q * tau1_q == -1 && mu2_q * tau2_q == -1) {++n_OSOS;}
+       if(mu1_q * tau1_q == -1 && mu2_q * tau2_q ==  1) {++n_OSSS;}
+       if(mu1_q * tau1_q ==  1 && mu2_q * tau2_q == -1) {++n_SSOS;}
+       if(mu1_q * tau1_q ==  1 && mu2_q * tau2_q ==  1) {++n_SSSS;}
+       if(mu1_q == 1 && tau1_q == 1 && mu2_q == 1 && tau2_q == 1) {++n_pppp;} // 1
+       if(mu1_q == 1 && tau1_q == 1 && mu2_q == 1 && tau2_q ==-1) {++n_pppn;}
+       if(mu1_q == 1 && tau1_q == 1 && mu2_q ==-1 && tau2_q == 1) {++n_ppnp;}
+       if(mu1_q == 1 && tau1_q == 1 && mu2_q ==-1 && tau2_q ==-1) {++n_ppnn;}
+       if(mu1_q == 1 && tau1_q ==-1 && mu2_q == 1 && tau2_q == 1) {++n_pnpp;} // 5
+       if(mu1_q == 1 && tau1_q ==-1 && mu2_q == 1 && tau2_q ==-1) {++n_pnpn;}
+       if(mu1_q == 1 && tau1_q ==-1 && mu2_q ==-1 && tau2_q == 1) {++n_pnnp;}
+       if(mu1_q == 1 && tau1_q ==-1 && mu2_q ==-1 && tau2_q ==-1) {++n_pnnn;}
+       if(mu1_q ==-1 && tau1_q == 1 && mu2_q == 1 && tau2_q == 1) {++n_nppp;} // 9
+       if(mu1_q ==-1 && tau1_q == 1 && mu2_q == 1 && tau2_q ==-1) {++n_nppn;}
+       if(mu1_q ==-1 && tau1_q == 1 && mu2_q ==-1 && tau2_q == 1) {++n_npnp;}
+       if(mu1_q ==-1 && tau1_q == 1 && mu2_q ==-1 && tau2_q ==-1) {++n_npnn;}
+       if(mu1_q ==-1 && tau1_q ==-1 && mu2_q == 1 && tau2_q == 1) {++n_nnpp;} // 13
+       if(mu1_q ==-1 && tau1_q ==-1 && mu2_q == 1 && tau2_q ==-1) {++n_nnpn;}
+       if(mu1_q ==-1 && tau1_q ==-1 && mu2_q ==-1 && tau2_q == 1) {++n_nnnp;}
+       if(mu1_q ==-1 && tau1_q ==-1 && mu2_q ==-1 && tau2_q ==-1) {++n_nnnn;}
+   
+       }
+
+       if (dR2 < 0.3 && dR3 < 0.3) { 
+       if(mu1_q * tau2_q == -1 && mu2_q * tau1_q == -1) {++n_OSOS;}
+       if(mu1_q * tau2_q == -1 && mu2_q * tau1_q ==  1) {++n_OSSS;}
+       if(mu1_q * tau2_q ==  1 && mu2_q * tau1_q == -1) {++n_SSOS;}
+       if(mu1_q * tau2_q ==  1 && mu2_q * tau1_q ==  1) {++n_SSSS;}
+       if(mu1_q == 1 && tau2_q == 1 && mu2_q == 1 && tau1_q == 1) {++n_pppp;} // 1
+       if(mu1_q == 1 && tau2_q == 1 && mu2_q == 1 && tau1_q ==-1) {++n_pppn;}
+       if(mu1_q == 1 && tau2_q == 1 && mu2_q ==-1 && tau1_q == 1) {++n_ppnp;}
+       if(mu1_q == 1 && tau2_q == 1 && mu2_q ==-1 && tau1_q ==-1) {++n_ppnn;}
+       if(mu1_q == 1 && tau2_q ==-1 && mu2_q == 1 && tau1_q == 1) {++n_pnpp;} // 5
+       if(mu1_q == 1 && tau2_q ==-1 && mu2_q == 1 && tau1_q ==-1) {++n_pnpn;}
+       if(mu1_q == 1 && tau2_q ==-1 && mu2_q ==-1 && tau1_q == 1) {++n_pnnp;}
+       if(mu1_q == 1 && tau2_q ==-1 && mu2_q ==-1 && tau1_q ==-1) {++n_pnnn;}
+       if(mu1_q ==-1 && tau2_q == 1 && mu2_q == 1 && tau1_q == 1) {++n_nppp;} // 9
+       if(mu1_q ==-1 && tau2_q == 1 && mu2_q == 1 && tau1_q ==-1) {++n_nppn;}
+       if(mu1_q ==-1 && tau2_q == 1 && mu2_q ==-1 && tau1_q == 1) {++n_npnp;}
+       if(mu1_q ==-1 && tau2_q == 1 && mu2_q ==-1 && tau1_q ==-1) {++n_npnn;}
+       if(mu1_q ==-1 && tau2_q ==-1 && mu2_q == 1 && tau1_q == 1) {++n_nnpp;} // 13
+       if(mu1_q ==-1 && tau2_q ==-1 && mu2_q == 1 && tau1_q ==-1) {++n_nnpn;}
+       if(mu1_q ==-1 && tau2_q ==-1 && mu2_q ==-1 && tau1_q == 1) {++n_nnnp;}
+       if(mu1_q ==-1 && tau2_q ==-1 && mu2_q ==-1 && tau1_q ==-1) {++n_nnnn;}
+       } 
+
+       if ((dR1 < 0.3 && dR4 < 0.3) && (mu1_q * tau1_q == -1 && mu2_q * tau2_q == -1))
+	{
+	  cout<<"### pass S.S. !"<<endl;
+          go_category1_4 = true;
+	  
+          vis1_px = mu1_px + tau1_px;
+	  vis1_py = mu1_py + tau1_py;
+	  vis1_pz = mu1_pz + tau1_pz;
+	  vis1_e = mu1_e + tau1_e;
+	  vis2_px = mu2_px + tau2_px;
+	  vis2_py = mu2_py + tau2_py;
+	  vis2_pz = mu2_pz + tau2_pz;
+	  vis2_e = mu2_e + tau2_e;
+        
+          vis1_phi = atan2 (vis1_py, vis1_px);
+          vis2_phi = atan2 (vis2_py, vis2_px);
+          cos_dphi = cos (fabs (vis2_phi - vis1_phi));
+
+          
+          x_vis1 = (vis2_px * vis1_py - vis2_py * vis1_px) / (vis2_px * vis1_py + METx * vis1_py - vis2_py * vis1_px - METy * vis1_px);
+          x_vis2 = (vis2_px * vis1_py - vis2_py * vis1_px) / (vis2_px * vis1_py - METx * vis2_py - vis2_py * vis1_px + METy * vis2_px);
+          
+          m_vis1vis2 = sqrt (pow (vis1_e + vis2_e, 2) - pow (vis1_px + vis2_px, 2) - pow (vis1_py + vis2_py, 2) - pow (vis1_pz + vis2_pz, 2));
+          m_vis1vis2_recon = m_vis1vis2 / sqrt (x_vis1 * x_vis2);
+
+          if(Weight==1){ ++category1[3];}
+          if(Weight==-1){ --category1[3];}
+      
+          if(Trig_EF_2mu6==1){
+          if(Weight==1){ ++category1_trig[3];}
+          if(Weight==-1){ --category1_trig[3];}
+         
+          m_MET_cut3->Fill(MET,Weight);
+          m_m_mumu_cut3->Fill(m_ll,Weight); 
+          m_m_tautau_cut3->Fill(m_hh,Weight); 
+          m_inv_mass_cut3->Fill(inv_mass,Weight);
+
+          m_m_mutau_cut3->Fill(m_l1h1,Weight);
+          m_m_mutau_cut3->Fill(m_l2h2,Weight);  
+          m_dR_recon_cut3->Fill(dR1,Weight);
+          m_dR_recon_cut3->Fill(dR4,Weight);
+
+          m_x_vis1_cut3->Fill(x_vis1,Weight);
+          m_x_vis2_cut3->Fill(x_vis2,Weight);
+          m_cos_dphi_cut3->Fill(x_vis2,Weight);
+          m_m_vis1vis2_recon_cut3->Fill(m_vis1vis2_recon,Weight);
+ 
+          m_mu1_pt_cut3->Fill(mu1_pt,Weight); 
+          m_mu1_eta_cut3->Fill(mu1_eta,Weight); 
+          m_mu1_phi_cut3->Fill(mu1_phi,Weight); 
+          m_mu2_pt_cut3->Fill(mu2_pt,Weight); 
+          m_mu2_eta_cut3->Fill(mu2_eta,Weight); 
+          m_mu2_phi_cut3->Fill(mu2_phi,Weight); 
+          m_tau1_pt_cut3->Fill(tau1_pt,Weight); 
+          m_tau1_eta_cut3->Fill(tau1_eta,Weight); 
+          m_tau1_phi_cut3->Fill(tau1_phi,Weight); 
+          m_tau2_pt_cut3->Fill(tau2_pt,Weight); 
+          m_tau2_eta_cut3->Fill(tau2_eta,Weight); 
+          m_tau2_phi_cut3->Fill(tau2_phi,Weight); 
+          cout<<"Cut 3 candidate("<<RunNumber<<", "<<EventNumber<<")"<<endl; 
+         }	
+      }
+
+      else if ((dR2 < 0.3 && dR3< 0.3) && (mu1_q * tau2_q == -1 && mu2_q * tau1_q == -1))
+	{
+	  cout<<"### pass S.S. !"<<endl;
+          go_category1_4 = true;
+	  
+          vis1_px = mu1_px + tau2_px;
+	  vis1_py = mu1_py + tau2_py;
+	  vis1_pz = mu1_pz + tau2_pz;
+	  vis1_e = mu1_e + tau2_e;
+	  vis2_px = mu2_px + tau1_px;
+	  vis2_py = mu2_py + tau1_py;
+	  vis2_pz = mu2_pz + tau1_pz;
+	  vis2_e = mu2_e + tau1_e;
+
+          vis1_phi = atan2 (vis1_py, vis1_px);
+          vis2_phi = atan2 (vis2_py, vis2_px);
+          cos_dphi = cos (fabs (vis2_phi - vis1_phi));
+
+          x_vis1 = (vis2_px * vis1_py - vis2_py * vis1_px) / (vis2_px * vis1_py + METx * vis1_py - vis2_py * vis1_px - METy * vis1_px);
+          x_vis2 = (vis2_px * vis1_py - vis2_py * vis1_px) / (vis2_px * vis1_py - METx * vis2_py - vis2_py * vis1_px + METy * vis2_px);
+
+          m_vis1vis2 = sqrt (pow (vis1_e + vis2_e, 2) - pow (vis1_px + vis2_px, 2) - pow (vis1_py + vis2_py, 2) - pow (vis1_pz + vis2_pz, 2));
+          m_vis1vis2_recon = m_vis1vis2 / sqrt (x_vis1 * x_vis2);
+
+          if(Weight==1){ ++category1[3];}
+          if(Weight==-1){ --category1[3];}
+	
+          if(Trig_EF_2mu6==1){
+          if(Weight==1){ ++category1_trig[3];}
+          if(Weight==-1){ --category1_trig[3];}
+  
+          m_MET_cut3->Fill(MET,Weight);
+          m_m_mumu_cut3->Fill(m_ll,Weight); 
+          m_m_tautau_cut3->Fill(m_hh,Weight); 
+          m_inv_mass_cut3->Fill(inv_mass,Weight);
+   
+          m_m_mutau_cut3->Fill(m_l1h2,Weight);
+          m_m_mutau_cut3->Fill(m_l2h1,Weight);  
+          m_dR_recon_cut3->Fill(dR2,Weight);
+          m_dR_recon_cut3->Fill(dR3,Weight);
+ 
+          m_x_vis1_cut3->Fill(x_vis1,Weight);
+          m_x_vis2_cut3->Fill(x_vis2,Weight);
+          m_cos_dphi_cut3->Fill(cos_dphi,Weight);
+          m_m_vis1vis2_recon_cut3->Fill(m_vis1vis2_recon,Weight);
+
+          m_mu1_pt_cut3->Fill(mu1_pt,Weight); 
+          m_mu1_eta_cut3->Fill(mu1_eta,Weight); 
+          m_mu1_phi_cut3->Fill(mu1_phi,Weight); 
+          m_mu2_pt_cut3->Fill(mu2_pt,Weight); 
+          m_mu2_eta_cut3->Fill(mu2_eta,Weight); 
+          m_mu2_phi_cut3->Fill(mu2_phi,Weight); 
+          m_tau1_pt_cut3->Fill(tau1_pt,Weight); 
+          m_tau1_eta_cut3->Fill(tau1_eta,Weight); 
+          m_tau1_phi_cut3->Fill(tau1_phi,Weight); 
+          m_tau2_pt_cut3->Fill(tau2_pt,Weight); 
+          m_tau2_eta_cut3->Fill(tau2_eta,Weight); 
+          m_tau2_phi_cut3->Fill(tau2_phi,Weight); 
+          cout<<"Cut 3 candidate("<<RunNumber<<", "<<EventNumber<<")"<<endl; 
+  	 }
+       }
+
+    }
+
+  // **** category1_4 **** require ((x_vis1 > 0 && x_vis1 < 1) && (x_vis2 > 0 && x_vis2 < 1))
+  if (go_category1_4 == true)
+    {
+      if ((x_vis1 > 0 && x_vis1 < 1) && (x_vis2 > 0 && x_vis2 < 1))
+	{
+	 go_category1_5 = true;
+
+         if(Weight==1){ ++category1[4];}
+         if(Weight==-1){ --category1[4];}
+         
+         if(Trig_EF_2mu6==1){ 
+         if(Weight==1){ ++category1_trig[4];}
+         if(Weight==-1){ --category1_trig[4];}
+  
+         m_MET_cut4->Fill(MET,Weight);
+         m_m_mumu_cut4->Fill(m_ll,Weight); 
+         m_m_tautau_cut4->Fill(m_hh,Weight); 
+         m_inv_mass_cut4->Fill(inv_mass,Weight);
+      
+         m_x_vis1_cut4->Fill(x_vis1,Weight);
+         m_x_vis2_cut4->Fill(x_vis2,Weight);
+         m_cos_dphi_cut4->Fill(cos_dphi,Weight);
+         m_m_vis1vis2_recon_cut4->Fill(m_vis1vis2_recon,Weight);
+
+         if(dR1<0.5 && dR4<0.5) {
+         m_m_mutau_cut4->Fill(m_l1h1,Weight);
+         m_m_mutau_cut4->Fill(m_l2h2,Weight);
+         m_dR_recon_cut4->Fill(dR1,Weight);
+         m_dR_recon_cut4->Fill(dR4,Weight);
+         } 
+ 
+         if(dR2<0.5 && dR3<0.5) {
+         m_m_mutau_cut4->Fill(m_l1h2,Weight);
+         m_m_mutau_cut4->Fill(m_l2h1,Weight); 
+         m_dR_recon_cut4->Fill(dR2,Weight);
+         m_dR_recon_cut4->Fill(dR3,Weight);
+         } 
+ 
+         m_mu1_pt_cut4->Fill(mu1_pt,Weight); 
+         m_mu1_eta_cut4->Fill(mu1_eta,Weight); 
+         m_mu1_phi_cut4->Fill(mu1_phi,Weight); 
+         m_mu2_pt_cut4->Fill(mu2_pt,Weight); 
+         m_mu2_eta_cut4->Fill(mu2_eta,Weight); 
+         m_mu2_phi_cut4->Fill(mu2_phi,Weight); 
+         m_tau1_pt_cut4->Fill(tau1_pt,Weight); 
+         m_tau1_eta_cut4->Fill(tau1_eta,Weight); 
+         m_tau1_phi_cut4->Fill(tau1_phi,Weight); 
+         m_tau2_pt_cut4->Fill(tau2_pt,Weight); 
+         m_tau2_eta_cut4->Fill(tau2_eta,Weight); 
+         m_tau2_phi_cut4->Fill(tau2_phi,Weight); 
+          cout<<"Cut 4 candidate("<<RunNumber<<", "<<EventNumber<<")"<<endl; 
+         }
+        }
+    }
+
+  // **** category1_5 **** require MissingET > 20 GeV 
+  if (go_category1_5 == true)
+    {
+      if (MET > 20)
+         {
+	 go_category1_6 = true;
+
+         if(Weight==1){ ++category1[5];}
+         if(Weight==-1){ --category1[5];}
+         
+         if(Trig_EF_2mu6==1){
+         if(Weight==1){ ++category1_trig[5];}
+         if(Weight==-1){ --category1_trig[5];}
+           
+         m_MET_cut5->Fill(MET,Weight);
+         m_m_mumu_cut5->Fill(m_ll,Weight); 
+         m_m_tautau_cut5->Fill(m_hh,Weight); 
+         m_inv_mass_cut5->Fill(inv_mass,Weight);
+    
+         m_x_vis1_cut5->Fill(x_vis1,Weight);
+         m_x_vis2_cut5->Fill(x_vis2,Weight);
+         m_cos_dphi_cut5->Fill(cos_dphi,Weight);
+         m_m_vis1vis2_recon_cut5->Fill(m_vis1vis2_recon,Weight);
+
+         if(dR1<0.5 && dR4<0.5) {
+         m_m_mutau_cut5->Fill(m_l1h1,Weight);
+         m_m_mutau_cut5->Fill(m_l2h2,Weight);
+         m_dR_recon_cut5->Fill(dR1,Weight);
+         m_dR_recon_cut5->Fill(dR4,Weight);
+         } 
+ 
+         if(dR2<0.5 && dR3<0.5) {
+         m_m_mutau_cut5->Fill(m_l1h2,Weight);
+         m_m_mutau_cut5->Fill(m_l2h1,Weight); 
+         m_dR_recon_cut5->Fill(dR2,Weight);
+         m_dR_recon_cut5->Fill(dR3,Weight);
+         } 
+ 
+         m_mu1_pt_cut5->Fill(mu1_pt,Weight); 
+         m_mu1_eta_cut5->Fill(mu1_eta,Weight); 
+         m_mu1_phi_cut5->Fill(mu1_phi,Weight); 
+         m_mu2_pt_cut5->Fill(mu2_pt,Weight); 
+         m_mu2_eta_cut5->Fill(mu2_eta,Weight); 
+         m_mu2_phi_cut5->Fill(mu2_phi,Weight); 
+         m_tau1_pt_cut5->Fill(tau1_pt,Weight); 
+         m_tau1_eta_cut5->Fill(tau1_eta,Weight); 
+         m_tau1_phi_cut5->Fill(tau1_phi,Weight); 
+         m_tau2_pt_cut5->Fill(tau2_pt,Weight); 
+         m_tau2_eta_cut5->Fill(tau2_eta,Weight); 
+         m_tau2_phi_cut5->Fill(tau2_phi,Weight); 
+          cout<<"Cut 5 candidate("<<RunNumber<<", "<<EventNumber<<")"<<endl; 
+         }
+
+	}
+    }
+
+  // **** category1_6 **** 
+  if (go_category1_6 == true)
+    {
+      if (fabs (cos_dphi) < 0.95)
+	{
+	  go_category1_7 = true;
+
+          if(Weight==1){ ++category1[6];}
+          if(Weight==-1){ --category1[6];}
+          
+          if(Trig_EF_2mu6==1){
+          if(Weight==1){ ++category1_trig[6];}
+          if(Weight==-1){ --category1_trig[6];}
+          }
+ 
+          m_MET_cut6->Fill(MET,Weight);
+          m_m_mumu_cut6->Fill(m_ll,Weight); 
+          m_m_tautau_cut6->Fill(m_hh,Weight); 
+          m_inv_mass_cut6->Fill(inv_mass,Weight);
+
+          m_x_vis1_cut6->Fill(x_vis1,Weight);
+          m_x_vis2_cut6->Fill(x_vis2,Weight);
+          m_cos_dphi_cut6->Fill(cos_dphi,Weight);
+          m_m_vis1vis2_recon_cut6->Fill(m_vis1vis2_recon,Weight);
+
+          if(dR1<0.5 && dR4<0.5) {
+          m_m_mutau_cut6->Fill(m_l1h1,Weight);
+          m_m_mutau_cut6->Fill(m_l2h2,Weight);
+          m_dR_recon_cut6->Fill(dR1,Weight);
+          m_dR_recon_cut6->Fill(dR4,Weight);
+          } 
+ 
+          if(dR2<0.5 && dR3<0.5) {
+          m_m_mutau_cut6->Fill(m_l1h2,Weight);
+          m_m_mutau_cut6->Fill(m_l2h1,Weight); 
+          m_dR_recon_cut6->Fill(dR2,Weight);
+          m_dR_recon_cut6->Fill(dR3,Weight);
+          } 
+ 
+          m_mu1_pt_cut6->Fill(mu1_pt,Weight); 
+          m_mu1_eta_cut6->Fill(mu1_eta,Weight); 
+          m_mu1_phi_cut6->Fill(mu1_phi,Weight); 
+          m_mu2_pt_cut6->Fill(mu2_pt,Weight); 
+          m_mu2_eta_cut6->Fill(mu2_eta,Weight); 
+          m_mu2_phi_cut6->Fill(mu2_phi,Weight); 
+          m_tau1_pt_cut6->Fill(tau1_pt,Weight); 
+          m_tau1_eta_cut6->Fill(tau1_eta,Weight); 
+          m_tau1_phi_cut6->Fill(tau1_phi,Weight); 
+          m_tau2_pt_cut6->Fill(tau2_pt,Weight); 
+          m_tau2_eta_cut6->Fill(tau2_eta,Weight); 
+          m_tau2_phi_cut6->Fill(tau2_phi,Weight); 
+          cout<<"Cut 6 candidate("<<RunNumber<<", "<<EventNumber<<")"<<endl; 
+	}
+    }
+
+// **** category1_7
+  if (go_category1_7 == true)
+    {
+      m_vis1vis2 =
+	sqrt (pow (vis1_e + vis2_e, 2) - pow (vis1_px + vis2_px, 2) -
+	      pow (vis1_py + vis2_py, 2) - pow (vis1_pz + vis2_pz, 2));
+
+      m_vis1vis2_recon = m_vis1vis2 / sqrt (x_vis1 * x_vis2);
+
+      if (m_vis1vis2_recon > 80 && m_vis1vis2_recon < 120)
+	{
+
+         if(Weight==1){ ++category1[7];}
+         if(Weight==-1){ --category1[7];}
+      
+         if(Trig_EF_2mu6==1){ 
+         if(Weight==1){ ++category1_trig[7];}
+         if(Weight==-1){ --category1_trig[7];}
+         }
+
+         m_MET_cut7->Fill(MET,Weight);
+         m_m_mumu_cut7->Fill(m_ll,Weight); 
+         m_m_tautau_cut7->Fill(m_hh,Weight); 
+         m_inv_mass_cut7->Fill(inv_mass,Weight);
+    
+         m_x_vis1_cut7->Fill(x_vis1,Weight);
+         m_x_vis2_cut7->Fill(x_vis2,Weight);
+         m_cos_dphi_cut7->Fill(cos_dphi,Weight);
+         m_m_vis1vis2_recon_cut7->Fill(m_vis1vis2_recon,Weight);
+
+         if(dR1<0.5 && dR4<0.5) {
+         m_m_mutau_cut7->Fill(m_l1h1,Weight);
+         m_m_mutau_cut7->Fill(m_l2h2,Weight);
+         m_dR_recon_cut7->Fill(dR1,Weight);
+         m_dR_recon_cut7->Fill(dR4,Weight);
+         } 
+
+         if(dR2<0.5 && dR3<0.5) {
+         m_m_mutau_cut7->Fill(m_l1h2,Weight);
+         m_m_mutau_cut7->Fill(m_l2h1,Weight); 
+         m_dR_recon_cut7->Fill(dR2,Weight);
+         m_dR_recon_cut7->Fill(dR3,Weight);
+         } 
+ 
+         m_mu1_pt_cut7->Fill(mu1_pt,Weight); 
+         m_mu1_eta_cut7->Fill(mu1_eta,Weight); 
+         m_mu1_phi_cut7->Fill(mu1_phi,Weight); 
+         m_mu2_pt_cut7->Fill(mu2_pt,Weight); 
+         m_mu2_eta_cut7->Fill(mu2_eta,Weight); 
+         m_mu2_phi_cut7->Fill(mu2_phi,Weight); 
+         m_tau1_pt_cut7->Fill(tau1_pt,Weight); 
+         m_tau1_eta_cut7->Fill(tau1_eta,Weight); 
+         m_tau1_phi_cut7->Fill(tau1_phi,Weight); 
+         m_tau2_pt_cut7->Fill(tau2_pt,Weight); 
+         m_tau2_eta_cut7->Fill(tau2_eta,Weight); 
+         m_tau2_phi_cut7->Fill(tau2_phi,Weight); 
+          cout<<"Cut 7 candidate("<<RunNumber<<", "<<EventNumber<<")"<<endl; 
+	}
+    }
+
+// end of execute
+}
+
+void
+MyAna::clear ()
+{
+
+  for (unsigned int i = 0; i < truth_muons->size (); i++)
+    {
+      delete (*truth_muons)[i];
+    }
+  for (unsigned int i = 0; i < truth_taujets->size (); i++)
+    {
+      delete (*truth_taujets)[i];
+    }
+  for (unsigned int i = 0; i < truth_nu1s->size (); i++)
+    {
+      delete (*truth_nu1s)[i];
+    }
+  for (unsigned int i = 0; i < truth_nu2s->size (); i++)
+    {
+      delete (*truth_nu2s)[i];
+    }
+  for (unsigned int i = 0; i < truth_nu3s->size (); i++)
+    {
+      delete (*truth_nu3s)[i];
+    }
+  for (unsigned int i = 0; i < truth_nu4s->size (); i++)
+    {
+      delete (*truth_nu4s)[i];
+    }
+  for (unsigned int i = 0; i < good_electrons->size (); i++)
+    {
+      delete (*good_electrons)[i];
+    }
+  for (unsigned int i = 0; i < good_muons->size (); i++)
+    {
+      delete (*good_muons)[i];
+    }
+  for (unsigned int i = 0; i < good_taujets->size (); i++)
+    {
+      delete (*good_taujets)[i];
+    }
+  for (unsigned int i = 0; i < good_jets->size (); i++)
+    {
+      delete (*good_jets)[i];
+    }
+
+  truth_muons->clear ();
+  truth_nu1s->clear ();
+  truth_nu2s->clear ();
+  truth_nu3s->clear ();
+  truth_nu4s->clear ();
+  truth_taujets->clear ();
+  good_electrons->clear ();
+  good_muons->clear ();
+  good_taujets->clear ();
+  good_jets->clear ();
+
+}
+
+void
+MyAna::finalize ()
+{
+
+  //root file
+  m_file->Write ();
+  m_file->Close ();
+
+//
+  cout <<
+    "                                                                           "
+    << endl;
+  cout << "############## Analysis Done #############" << endl;
+  cout<<"##    Total event :" <<all[0]<<" GRL:"<<GRL[0]<< " was analyzed.    ##"<<endl;
+  cout<<"############## Summary of basic selection ##########"<<endl;
+  cout<<"##    No. of event                        : "<<basic_cut[0]<<"("<<basic_cut_trig[0]<<")"<<endl;
+  cout<<"##    No. of event after Weight           : "<<basic_cut[1]<<"("<<basic_cut_trig[1]<<")"<<" "<<basic_cut[2]<<"("<<basic_cut_trig[2]<<")"<<" "
+                                                      <<basic_cut[3]<<"("<<basic_cut_trig[3]<<")"<<" "<<basic_cut[4]<<"("<<basic_cut_trig[4]<<")"<<" "
+                                                      <<basic_cut[5]<<"("<<basic_cut_trig[5]<<")"<<" "<<basic_cut[6]<<"("<<basic_cut_trig[6]<<")"<<endl;
+  cout<<"##    No. of event after 2mu2tau (w/o ID) : "<<basic_cut[7]<<"("<<basic_cut_trig[7]<<")"<<" "<<basic_cut[8]<<"("<<basic_cut_trig[8]<<")"<<" "
+                                                      <<basic_cut[9]<<"("<<basic_cut_trig[9]<<")"<<" "<<basic_cut[10]<<"("<<basic_cut_trig[10]<<")"<<" "
+                                                      <<basic_cut[11]<<"("<<basic_cut_trig[11]<<")"<<" "<<basic_cut[12]<<"("<<basic_cut_trig[12]<<")"<<endl;
+  cout<<"##    No. of event after Vx Primary       : "<<basic_cut[13]<<"("<<basic_cut_trig[13]<<")"<<" "<<basic_cut[14]<<"("<<basic_cut_trig[14]<<")"<<" "
+                                                      <<basic_cut[15]<<"("<<basic_cut_trig[15]<<")"<<" "<<basic_cut[16]<<"("<<basic_cut_trig[16]<<")"<<" "
+                                                      <<basic_cut[17]<<"("<<basic_cut_trig[17]<<")"<<" "<<basic_cut[18]<<"("<<basic_cut_trig[18]<<")"<<" "<<endl;
+  cout<<"##    No. of event after Event cleaning   : "<<basic_cut[19]<<"("<<basic_cut_trig[19]<<")"<<" "<<basic_cut[20]<<"("<<basic_cut_trig[20]<<")"<<" "
+                                                      <<basic_cut[21]<<"("<<basic_cut_trig[21]<<")"<<" "<<basic_cut[22]<<"("<<basic_cut_trig[22]<<")"<<" "
+                                                      <<basic_cut[23]<<"("<<basic_cut_trig[23]<<")"<<" "<<basic_cut[24]<<"("<<basic_cut_trig[24]<<")"<<" "<<endl;
+  cout << "############## Summary of Analysis #############" << endl;
+  cout << "No. of good selected electrons    : " << n_good_electrons << endl;
+  cout << "No. of good selected muons        : " << n_good_muons << endl;
+  cout << "No. of good selected taujets      : " << n_good_taujets << endl;
+  cout << "No. of good selected jets         : " << n_good_jets << endl;
+  cout << "############## Summary of Basic_Cut #############" << endl;
+  cout << "No. of good event since start     : " << category1[0] << endl;
+  cout << "No. after 2 mu and 2 tau          : " << category1[1] << endl;
+  cout << "No. after dR<0.5 pairs            : " << category1[2] << endl;
+  cout << "No. after Opposite Sign           : " << category1[3] << endl;
+  cout << "No. after MET > 20GeV             : " << category1[4] << endl;
+  cout << "No. after 0<x_vis1,x_vis2<1       : " << category1[5] << endl;
+  cout << "No. after cos|dphi|<0.95          : " << category1[6] << endl;
+  cout << "No. after Higgs mass window       : " << category1[7] << endl;
+  cout << "##########################################" << endl;
+  cout << "No. of Total event                : " <<all[0]<<endl;
+  cout << "No. of Total event after GRL      : " <<basic_cut[0]<<"("<<basic_cut_trig[0]<<")"<<endl;
+  cout << "No. after Weight                  : " <<basic_cut[1]<<"("<<basic_cut_trig[1]<<")"<<endl;
+  cout << "No. after 2mu2tau (w/o ID)        : " <<basic_cut[7]<<"("<<basic_cut_trig[7]<<")"<<endl;
+  cout << "No. after VxPrimary Requirement   : " <<basic_cut[13]<<"("<<basic_cut_trig[13]<<")"<<endl;
+  cout << "No. after Event Cleaning          : " <<basic_cut[19]<<"("<<basic_cut_trig[19]<<")"<<endl;
+  cout << "No. after 2 mu and 2 tau          : " << category1[1] <<"("<<category1_trig[1]<<")"<< endl;
+  cout << "No. after dR<0.5 pairs            : " << category1[2] <<"("<<category1_trig[2]<<")"<< endl;
+  cout << "No. after Opposite Sign           : " << category1[3] <<"("<<category1_trig[3]<<")"<< endl;
+  cout << "No. after MET > 20GeV             : " << category1[4] <<"("<<category1_trig[4]<<")"<< endl;
+  cout << "No. after 0<x_vis1,x_vis2<1       : " << category1[5] <<"("<<category1_trig[5]<<")"<< endl;
+  cout << "No. after cos|dphi|<0.95          : " << category1[6] <<"("<<category1_trig[6]<<")"<< endl;
+  cout << "No. after Higgs mass window       : " << category1[7] <<"("<<category1_trig[7]<<")"<< endl;
+  cout << "##########################################" << endl;
+  cout << "#########   Data Driven Study  ###########" << endl;
+  cout << "##########################################" << endl;
+  cout << " OS x OS " <<n_OSOS<<endl; 
+  cout << " OS x SS " <<n_OSSS<<endl; 
+  cout << " SS x OS " <<n_SSOS<<endl; 
+  cout << " SS x SS " <<n_SSSS<<endl; 
+  cout << " PPPP " << n_pppp << endl;; //1
+  cout << " PPPN " << n_pppn << endl;
+  cout << " PPNP " << n_ppnp << endl;
+  cout << " PPNN " << n_ppnn << endl;
+  cout << " PNPP " << n_pnpp << endl; //5
+  cout << " PNPN " << n_pnpn << endl;
+  cout << " PNNP " << n_pnnp << endl;
+  cout << " PNNN " << n_pnnn << endl;
+  cout << " NPPP " << n_nppp << endl; //9
+  cout << " NPPN " << n_nppn << endl;
+  cout << " NPNP " << n_npnp << endl;
+  cout << " NPNN " << n_npnn << endl;
+  cout << " NNPP " << n_nnpp << endl; //13
+  cout << " NNPN " << n_nnpn << endl;
+  cout << " NNNP " << n_nnnp << endl;
+  cout << " NNNN " << n_nnnn << endl;
+
+}
